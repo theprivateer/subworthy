@@ -1,0 +1,166 @@
+
+
+@import 'variables';
+//@import 'fonts';
+
+@import 'bootstrap';
+
+html, body
+{
+    letter-spacing: 0.05em;
+}
+
+ul
+{
+    list-style-type: "— ";
+    padding-left: 2rem;
+    margin-left: 0;
+}
+
+.article-content
+{
+    blockquote
+    {
+        padding-left: 1.5rem;
+        border-left: solid 2px #c0c0c0;
+    }
+
+    img {
+        display: block;
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .article-longform
+    {
+        h1, h2, h3, h4, h5
+        {
+            @extend .h4;
+            @extend .fw-bold;
+        }
+    }
+}
+
+.breadcrumb
+{
+    color: $dark;
+
+    a
+    {
+        color: $dark;
+        text-decoration: none;
+
+        &:hover
+        {
+            color: $primary;
+        }
+    }
+}
+
+.hljs
+{
+    font-size: 90%;
+}
+
+.lead
+{
+    strong
+    {
+        font-weight: bold;
+    }
+}
+
+.post-preview
+{
+    @extend .py-4;
+
+    h3
+    {
+        @extend .h5;
+        @extend .fw-bold;
+
+        a
+        {
+            color: $dark;
+            text-decoration: none;
+
+            &:hover
+            {
+                color: $primary;
+            }
+        }
+    }
+}
+
+.page-content
+{
+    h1
+    {
+        @extend .h3;
+        @extend .mb-4;
+        @extend .fw-bold;
+    }
+
+    h2, h3
+    {
+        @extend .h4;
+        @extend .my-4;
+        @extend .fw-bold;
+    }
+
+    h4
+    {
+        @extend .h5;
+        @extend .my-4;
+        @extend .fw-bold;
+    }
+
+    a
+    {
+        text-decoration: none;
+
+        &:hover
+        {
+            color: #ccc;
+        }
+    }
+
+    img
+    {
+        @extend .img-fluid;
+    }
+}
+
+.up-next
+{
+    a
+    {
+        color: $dark;
+        text-decoration: none;
+
+        &:hover
+        {
+            color: $primary;
+        }
+    }
+}
+
+.navigation-links
+{
+    h5
+    {
+        font-size: 1em;
+        font-weight: bold;
+    }
+
+    a
+    {
+        color: $dark;
+        text-decoration: none;
+
+        &:hover
+        {
+            color: $primary;
+        }
+    }
+}
