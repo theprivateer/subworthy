@@ -1,8 +1,8 @@
 {
-    "name": "laravel/laravel",
+    "name": "theprivateer/subworthy",
     "type": "project",
-    "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "description": "Subscribe to blogs, news sites and podcasts and get it all delivered to your inbox once a day in your own personalised newsletter.",
+    "keywords": ["email", "rss"],
     "license": "MIT",
     "require": {
         "php": "^7.4|^8.0",
