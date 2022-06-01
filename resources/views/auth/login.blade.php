@@ -55,6 +55,12 @@
                 </div>
             </form>
         </div>
+
+        @if (Route::has('register'))
+            <div class="mt-2 text-center">
+                <a href="{{ route('register') }}" class="ml-4 text-sm text-gray-700 underline">Need to register?</a>
+            </div>
+        @endif
     </div>
 </div>
 </x-guest-layout>

@@ -16,11 +16,9 @@ class CreateFiltersTable extends Migration
         Schema::create('filters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('subscription_id')->constrained()->cascadeOnDelete();
-
             $table->string('field');
-            $table->string('modifier');
+            $table->string('operator');
             $table->string('pattern');
-
             $table->timestamps();
         });
     }

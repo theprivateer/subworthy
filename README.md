@@ -7,5 +7,5 @@ Subscribe to blogs, news sites and podcasts and get it all delivered to your inb
 Either clone or fork this repository, or install using Composer:
 
 ```shell
-composer create-project theprivateer/subworthy subworthy
+composer create-project theprivateer/subworthy subworthy --stability=dev
 ```

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Formatters\DefaultFormatter;
 use App\Formatters\FormatterContract;
-use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
@@ -14,7 +13,7 @@ use Illuminate\Support\Str;
 
 class Post extends Model
 {
-    use HasFactory, Prunable, HasUuid;
+    use HasFactory, Prunable;
 
     protected $guarded = [];
 

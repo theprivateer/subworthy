@@ -53,15 +53,15 @@
                                     </div>
 
                                     <div class="col-md-6 mb-3">
-                                        <label for="modifier_{{ $filter->id }}" class="form-label visually-hidden">Operator:</label>
+                                        <label for="operator_{{ $filter->id }}" class="form-label visually-hidden">Operator:</label>
 
-                                        <select name="modifier_{{ $filter->id }}" id="modifier_{{ $filter->id }}" class="form-control @error('modifier_' . $filter->id) is-invalid @enderror" required>
-                                            @foreach(['contains', 'equals', 'regex', 'does not contain', 'does not equal', 'regex (no match)'] as $modifier)
-                                                <option value="{{ $modifier }}" @if(old("modifier_{$filter->id}", $filter->modifier) == $modifier) selected @endif >{{ $modifier }}</option>
+                                        <select name="operator_{{ $filter->id }}" id="operator_{{ $filter->id }}" class="form-control @error('operator_' . $filter->id) is-invalid @enderror" required>
+                                            @foreach(['contains', 'equals', 'regex', 'does not contain', 'does not equal', 'regex (no match)'] as $operator)
+                                                <option value="{{ $operator }}" @if(old("operator_{$filter->id}", $filter->operator) == $operator) selected @endif >{{ $operator }}</option>
                                             @endforeach
                                         </select>
 
-                                        @error('modifier_' . $filter->id)
+                                        @error('operator_' . $filter->id)
                                         <div class="invalid-feedback">
                                             {{ $message }}
                                         </div>
@@ -126,16 +126,16 @@
                                     </div>
 
                                     <div class="col-md-6 mb-3">
-                                        <label for="modifier" class="form-label visually-hidden">Operator:</label>
+                                        <label for="operator" class="form-label visually-hidden">Operator:</label>
 
-                                        <select name="modifier" id="modifier" class="form-control @error('modifier') is-invalid @enderror" required>
+                                        <select name="operator" id="operator" class="form-control @error('operator') is-invalid @enderror" required>
                                             <option disabled selected>Select operation...</option>
-                                            @foreach(['contains', 'equals', 'regex', 'does not contain', 'does not equal', 'regex (no match)'] as $modifier)
-                                                <option value="{{ $modifier }}" @if(old('modifier') == $modifier) selected @endif >{{ $modifier }}</option>
+                                            @foreach(['contains', 'equals', 'regex', 'does not contain', 'does not equal', 'regex (no match)'] as $operator)
+                                                <option value="{{ $operator }}" @if(old('operator') == $operator) selected @endif >{{ $operator }}</option>
                                             @endforeach
                                         </select>
 
-                                        @error('modifier')
+                                        @error('operator')
                                         <div class="invalid-feedback">
                                             {{ $message }}
                                         </div>

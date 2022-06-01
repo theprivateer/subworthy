@@ -1,4 +1,4 @@
-<div class="mb-4 article-content" id="{{ $post->uuid }}">
+<div class="mb-4 article-content" id="post_{{ $post->id }}">
     @if($fullArticle)
         <div class="py-4">
             <h3 class="h4 fw-bold mb-3">
@@ -66,7 +66,7 @@
         <div class="row pt-4">
             <div class="col-md-5">
                 <h3 class="h5 fw-bold mb-3">
-                    <a href="#{{ $post->uuid }}" class="text-dark text-decoration-none" wire:click.prevent="showFull">
+                    <a href="#post_{{ $post->id }}" class="text-dark text-decoration-none" wire:click.prevent="showFull">
                         {!! $post->title !!}
                     </a>
                 </h3>
@@ -114,7 +114,7 @@
                 {!! $post->preview !!}
 
                 <p>
-                    <a href="#{{ $post->uuid }}" class="fw-bold text-dark text-decoration-none" wire:click.prevent="showFull">
+                    <a href="#post_{{ $post->id }}" class="fw-bold text-dark text-decoration-none" wire:click.prevent="showFull">
                         Read more...
                     </a>
                 </p>

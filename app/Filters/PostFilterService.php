@@ -44,7 +44,7 @@ class PostFilterService
 
     protected function runFilter(Filter $filter)
     {
-        $method = '_' . Str::of($filter->modifier)->remove(['(', ')'])->camel();
+        $method = '_' . Str::of($filter->operator)->remove(['(', ')'])->camel();
 
         if( ! method_exists($this, $method))
         {

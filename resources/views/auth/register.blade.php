@@ -48,11 +48,6 @@
                             <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required placeholder="Confirm Password" >
                             <label for="password_confirmation">{{ __('Confirm Password') }}</label>
                         </div>
-
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="terms" name="terms" value="1">
-                                <label class="form-check-label" for="terms">I agree to the </label> <a href="/terms" target="_blank">Terms of Service</a>
-                            </div>
                     </div>
 
                     <div class="card-footer d-flex justify-content-between align-items-center">

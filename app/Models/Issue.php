@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
@@ -10,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Issue extends Model
 {
-    use HasFactory, Prunable, HasUuid;
+    use HasFactory, Prunable;
 
     protected $guarded = [];
 

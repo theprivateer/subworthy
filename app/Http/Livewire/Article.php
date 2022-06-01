@@ -51,14 +51,14 @@ class Article extends Component
     {
         $this->fullArticle = true;
 
-        $this->emit('postOpened', $this->post->uuid);
+        $this->emit('postOpened', 'post_' . $this->post->id);
     }
 
     public function showPreview()
     {
         $this->fullArticle = false;
 
-        $this->emit('postClosed', $this->post->uuid);
+        $this->emit('postClosed', 'post_' . $this->post->uuid);
     }
 
     public function readLater()

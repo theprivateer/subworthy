@@ -12,11 +12,11 @@ class FilterController extends Controller
     {
         $this->validate($request, [
            'field' => 'required',
-           'modifier' => 'required',
+           'operator' => 'required',
            'pattern' => 'required',
         ]);
 
-        $filter = new Filter($request->only(['field', 'modifier', 'pattern']));
+        $filter = new Filter($request->only(['field', 'operator', 'pattern']));
 
         $subscription->filters()->save($filter);
 
@@ -30,13 +30,13 @@ class FilterController extends Controller
 
         $this->validate($request, [
             'field_' . $filter->id => 'required',
-            'modifier_' . $filter->id => 'required',
+            'operator_' . $filter->id => 'required',
             'pattern_' . $filter->id => 'required',
         ]);
 
         $filter->update([
            'field' => $request->get('field_' . $filter->id),
-           'modifier' => $request->get('modifier_' . $filter->id),
+           'operator' => $request->get('operator_' . $filter->id),
            'pattern' => $request->get('pattern_' . $filter->id),
         ]);
 
