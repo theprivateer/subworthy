@@ -29,6 +29,8 @@ class Post extends Model
 
     public function getBodyAttribute(): string
     {
+        // fetched_raw holds enriched content from a custom FetcherContract implementation
+        // (e.g. ProducthuntFetcher). Fall back to raw, which is the original RSS content.
         return $this->getFormatter()->render(
             $this->getAttribute('fetched_raw') ?? $this->getAttribute('raw')
         );
@@ -43,6 +45,8 @@ class Post extends Model
             return Str::words(strip_tags($body), 50);
         }
 
+        // Some feeds set the description element to the same value as the full content.
+        // In that case, truncate the body rather than rendering a full-length "preview".
         if($preview == $this->getAttribute('raw'))
         {
             $body = $this->getBodyAttribute();

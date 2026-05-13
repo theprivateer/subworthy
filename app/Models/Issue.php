@@ -26,6 +26,8 @@ class Issue extends Model
     {
         $this->load('user');
 
+        // Filter to currently-active subscriptions so posts from feeds the user has
+        // since unsubscribed from don't appear in an older issue they're re-reading.
         $active_subscriptions = $this->user->subscriptions()->pluck('feed_id')->all();
 
         // Order posts chronologically
@@ -39,6 +41,9 @@ class Issue extends Model
         $posts = $posts->groupBy('feed_id');
 
         $user = $this->user;
+        // Inject feed_title onto each post object so the view can show per-subscription
+        // title overrides without an extra query per post. This mutates the model instances
+        // in memory rather than going through a relation.
         $posts = $posts->each(function ($item, $index) use ($user) {
             $subscription = Subscription::where('user_id', $user->id)
                                         ->where('feed_id', $item->first()->feed_id)
@@ -49,7 +54,9 @@ class Issue extends Model
             });
         });
 
-        // Sort by the order feeds were added - eventually a custom sort order
+        // sortKeys() orders groups by feed_id (integer), which approximates the order
+        // feeds were subscribed to since IDs are auto-incrementing.
+        // TODO: eventually a custom sort order
         $this->issue_posts = collect($posts)->sortKeys();
     }
 

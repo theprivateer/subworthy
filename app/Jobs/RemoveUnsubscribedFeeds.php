@@ -18,6 +18,9 @@ class RemoveUnsubscribedFeeds implements ShouldQueue
      * Create a new job instance.
      *
      * @return void
+     *
+     * NOTE: the actual work happens here in the constructor, not in handle(). This means
+     * feed deletion runs at dispatch time in the calling process, not on the queue worker.
      */
     public function __construct()
     {

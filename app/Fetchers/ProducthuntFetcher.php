@@ -29,6 +29,8 @@ class ProducthuntFetcher extends AbstractFetcher implements FetcherContract
     {
         $data = json_decode($json, true);
 
+        // Product Hunt embeds a Next.js Apollo cache in __NEXT_DATA__. The first entry
+        // in apolloState is always the current product's data object.
         $post = array_shift($data['props']['apolloState']);
 
         return [

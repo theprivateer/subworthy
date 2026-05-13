@@ -72,6 +72,9 @@ class DefaultFormatter implements FormatterContract
     {
         $dom = new DOMDocument;
         $dom->preserveWhiteSpace = false;
+        // The <?xml encoding> declaration forces DOMDocument into UTF-8 mode; without it
+        // the parser defaults to ISO-8859-1 and mangles non-ASCII characters. The @ suppresses
+        // warnings about malformed HTML tags — DOMDocument still parses them successfully.
         @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $raw);
 
         foreach ($dom->getElementsByTagName('a') as $link) {
@@ -92,7 +95,8 @@ class DefaultFormatter implements FormatterContract
         foreach ($tags as $tag) {
             $src = $tag->getAttribute('src');
 
-            // if
+            // Distinguish root-relative paths (/images/foo.jpg) from protocol-relative URLs
+            // (//cdn.example.com/foo.jpg). Only prepend the feed's domain to root-relative ones.
             if($src[0] == '/' && $src[1] != '/')
             {
                 $src = $this->feed->tld . $src;

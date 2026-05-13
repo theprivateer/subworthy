@@ -24,6 +24,8 @@ class PostFilterService
         return (new static($post, $filters))->runFilters();
     }
 
+    // Returns true if the post should be EXCLUDED from the issue, false if it should be kept.
+    // Any single matching filter is enough to exclude — filters are OR'd, not AND'd.
     protected function runFilters()
     {
         if( ! $this->filters->count())
@@ -44,6 +46,10 @@ class PostFilterService
 
     protected function runFilter(Filter $filter)
     {
+        // Operator names like "does_not_contain" are stored as display strings (e.g.
+        // "does not contain"). Parentheses are stripped first because some operators
+        // are stored as "regex()" style. The leading underscore avoids collisions with
+        // any public method names if this class is extended.
         $method = '_' . Str::of($filter->operator)->remove(['(', ')'])->camel();
 
         if( ! method_exists($this, $method))

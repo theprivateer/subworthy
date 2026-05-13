@@ -71,15 +71,16 @@ class CheckFeed implements ShouldQueue
                 $this->processPost($post);
             }
 
-            // Set the next check time
+            // next_check_at stores a 4-digit 24-hour time string (Hi format, e.g. "0930"),
+            // not a full datetime. The scheduler compares it against the current UTC time string.
             $this->feed->next_check_at = $start->addHour()->format('Hi');
 
         } catch (\Exception $e)
         {
+            // On failure, back off 15 minutes rather than a full hour to retry sooner.
             $this->feed->next_check_at = $start->addMinutes(15)->format('Hi');
         }
 
-        // Set the next check time
         $this->feed->save();
     }
 
@@ -105,6 +106,8 @@ class CheckFeed implements ShouldQueue
             return;
         }
 
+        // Skip posts older than a month — matches the pruning window — so that a first-load
+        // of a feed with years of history doesn't flood the queue or the database.
         // TODO: set the pruning duration in config
         if(Carbon::parse($data->getDateCreated())->lte(now()->subMonth()))
         {
@@ -116,6 +119,8 @@ class CheckFeed implements ShouldQueue
                     ->where('feed_id', $this->feed->id)
                     ->first();
 
+        // $refresh_posts forces re-importing content for existing posts, used when a
+        // formatter or fetcher changes and existing post bodies need to be regenerated.
         if ( ! $post || $this->refresh_posts)
         {
             $raw = $data->getContent();

@@ -15,6 +15,8 @@ if ( ! function_exists('timezone_list'))
         $timezone = array();
         $timestamp = time();
 
+        // date_default_timezone_set mutates global PHP state temporarily so date('P') returns
+        // the UTC offset for each zone. The calling code must not be time-sensitive.
         foreach(timezone_identifiers_list(\DateTimeZone::ALL) as $key => $t) {
             date_default_timezone_set($t);
             $timezone[$key]['zone'] = $t;

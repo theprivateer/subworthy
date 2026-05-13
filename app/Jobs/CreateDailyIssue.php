@@ -42,6 +42,8 @@ class CreateDailyIssue implements ShouldQueue
                                     ->where('user_id', $this->user->id)
                                     ->get();
 
+        // For users who have never received an issue, look back 2 days so their first
+        // delivery isn't empty. After that, last_delivered_at is always set (see below).
         $since = $this->user->last_delivered_at ?: Carbon::now()->subDays(2);
 
         $posts_filtered = [];
@@ -53,11 +55,11 @@ class CreateDailyIssue implements ShouldQueue
                 ->where('created_at', '>=', $since)
                 ->get();
 
-            // Do the filtering here...
+            // PostFilterService::filter() returns true when a post should be EXCLUDED.
+            // $posts_filtered = posts that survived all filters (included in the issue).
+            // $posts_excluded = posts that matched a filter rule (omitted from the issue).
             foreach($posts as $post)
             {
-                // Apply the subscription filters
-                // get a boolean response
                 if(PostFilterService::filter($post, $subscription->filters))
                 {
                     $posts_excluded[] = $post->id;
@@ -84,7 +86,8 @@ class CreateDailyIssue implements ShouldQueue
             dispatch( new EmailDailyIssue($issue));
         }
 
-        // Set this regardless of whether anything actually gets sent
+        // Always advance last_delivered_at even when no issue was created, so the
+        // next run doesn't accumulate a growing lookback window of unsent posts.
         $this->user->last_delivered_at = Carbon::now();
         $this->user->save();
 

@@ -27,6 +27,9 @@ class Article extends Component
 
     public function mount()
     {
+        // Issues are publicly accessible. $user is always the issue owner; $authUser is the
+        // currently logged-in visitor (or false). Only show the read-later button when the
+        // viewer is looking at their own issue.
         if($this->authUser)
         {
             if($this->authUser->id == $this->user->id) {
