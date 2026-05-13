@@ -116,7 +116,7 @@
                 window.bootstrap.Offcanvas.getInstance(el).hide()
             }
 
-            Livewire.on('postOpened', postUuid => {
+            Livewire.on('postOpened', ({ id: postUuid }) => {
                 hljs.highlightAll()
                 document.getElementById(postUuid).scrollIntoView()
 
@@ -126,7 +126,7 @@
                 document.getElementById("close-btn").style.display = "block"
             })
 
-            Livewire.on('postClosed', postUuid => {
+            Livewire.on('postClosed', ({ id: postUuid }) => {
                 if(currentlyOpen == postUuid)
                 {
                     document.getElementById(currentlyOpen).scrollIntoView()

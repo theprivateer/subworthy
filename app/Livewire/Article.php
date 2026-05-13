@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
 use App\Models\ReadLater;
 use Livewire\Component;
@@ -51,14 +51,14 @@ class Article extends Component
     {
         $this->fullArticle = true;
 
-        $this->emit('postOpened', 'post_' . $this->post->id);
+        $this->dispatch('postOpened', id: 'post_' . $this->post->id);
     }
 
     public function showPreview()
     {
         $this->fullArticle = false;
 
-        $this->emit('postClosed', 'post_' . $this->post->uuid);
+        $this->dispatch('postClosed', id: 'post_' . $this->post->uuid);
     }
 
     public function readLater()

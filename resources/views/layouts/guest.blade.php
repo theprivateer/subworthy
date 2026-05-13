@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    @vite(['resources/scss/style.scss', 'resources/js/app.js'])
     <link rel="shortcut icon" href="{{ asset('favicon.png') }}">
 
     <title>Subworthy</title>
@@ -27,8 +27,6 @@
     <main>
         {{ $slot }}
     </main>
-
-    <script src="{{ asset('js/app.js') }}"></script>
 
     {!! $scriptTags ?? '' !!}
   </body>
