@@ -3,14 +3,15 @@
 namespace App\Fetchers;
 
 use App\Models\Post;
-use Goutte\Client;
 use Illuminate\Support\Str;
+use Symfony\Component\BrowserKit\HttpBrowser;
+use Symfony\Component\HttpClient\HttpClient;
 
 class ProducthuntFetcher extends AbstractFetcher implements FetcherContract
 {
     public function fetch(Post $post)
     {
-        $client = new Client();
+        $client = new HttpBrowser(HttpClient::create());
 
         $crawler = $client->request('GET', $post->url);
 
