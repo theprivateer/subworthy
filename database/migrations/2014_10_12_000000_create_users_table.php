@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username')->unique();
+            $table->string('username')->nullable()->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('timezone');
             $table->string('delivery_time');
             $table->string('delivery_time_local');
-            $table->string('days_of_week');
+            $table->string('days_of_week')->default('1234567');
             $table->dateTime('last_delivered_at')->nullable();
             $table->dateTime('last_interaction_at')->nullable();
             $table->timestamps();
