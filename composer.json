@@ -9,8 +9,8 @@
         "ezyang/htmlpurifier": "^4.13",
         "guzzlehttp/guzzle": "^7.2",
         "laminas/laminas-feed": "^2.14",
-        "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.9",
+        "laravel/framework": "^13.0",
+        "laravel/tinker": "^3.0",
         "league/uri": "^7.0",
         "livewire/livewire": "^3.4",
         "spatie/laravel-honeypot": "^4.5",
@@ -20,11 +20,12 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "laravel/boost": "^2.4",
         "laravel/breeze": "^2.0",
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.1",
-        "phpunit/phpunit": "^11.0",
+        "phpunit/phpunit": "^12.0",
         "spatie/laravel-ignition": "^2.4"
     },
     "autoload": {
