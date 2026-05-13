@@ -76,7 +76,12 @@ Bootstrap 5 + Alpine.js (bundled via Livewire). SCSS compiled via Vite from `res
 
 Users have a public profile at `/@{username}` showing their issue archive. Issues are also publicly accessible at `/issue/{issue}`. Link tracking goes through `/link/{user}/{post}`.
 
-===
+## Framework rules
+
+Detailed rules for Laravel and Livewire live in `.claude/rules/` and auto-load when working on matching files — no `@` imports needed here:
+
+- `.claude/rules/laravel.md` — loads for all `**/*.php` files
+- `.claude/rules/livewire.md` — loads for `app/Livewire/**` and `resources/views/livewire/**`
 
 <laravel-boost-guidelines>
 === foundation rules ===
