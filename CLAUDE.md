@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this app does
 
-Subworthy is a Laravel 8 RSS/podcast aggregator that collects content from subscribed feeds and delivers it as a personalised daily newsletter email. Users subscribe to feed URLs, configure delivery schedules and per-subscription filters, and receive a single daily digest.
+Subworthy is a Laravel 13 RSS/podcast aggregator that collects content from subscribed feeds and delivers it as a personalised daily newsletter email. Users subscribe to feed URLs, configure delivery schedules and per-subscription filters, and receive a single daily digest.
 
 ## Development environment
 
@@ -15,11 +15,11 @@ php artisan schedule:work      # runs the scheduler every minute
 php artisan queue:work         # processes queued jobs
 ```
 
-Frontend assets use Laravel Mix:
+Frontend assets use Vite:
 
 ```shell
-npm run dev       # one-time build
-npm run watch     # watch mode
+npm run dev       # dev server with HMR
+npm run build     # production build
 ```
 
 ## Common commands
@@ -43,7 +43,7 @@ Feed checking and issue delivery are entirely queue-driven. The scheduler fires 
 3. **`CreateDailyIssue` job** — collects posts since the user's `last_delivered_at`, runs them through `PostFilterService`, stores surviving post IDs as JSON in an `Issue` record, then dispatches `EmailDailyIssue`.
 4. **`EmailDailyIssue` job** — calls `Issue::loadIssue()` to hydrate `issue_posts`, then sends the `NewIssue` mail notification using the `mail.issue` Markdown template.
 
-The scheduler (`app/Console/Kernel.php`) also runs `model:prune` daily — both `Post` and `Issue` are pruned after one month. Pruned posts are archived to `ArchivedPost` (feed_id + source_id only) to prevent re-importing.
+The scheduler (registered in `bootstrap/app.php` via `withSchedule`) also runs `model:prune` daily — both `Post` and `Issue` are pruned after one month. Pruned posts are archived to `ArchivedPost` (feed_id + source_id only) to prevent re-importing. `RemoveUnsubscribedFeeds` also runs daily to delete feeds with no remaining subscribers.
 
 ### Feed extensibility
 
@@ -70,7 +70,7 @@ Two fields on `Feed` allow per-feed customisation:
 
 ### Frontend
 
-Bootstrap 5 + Alpine.js 2. SCSS compiled via Laravel Mix from `resources/scss/style.scss`. Livewire 2 is used for the `Article` component (`app/Http/Livewire/Article.php`) which handles inline article expansion and read-later toggling without page reloads.
+Bootstrap 5 + Alpine.js (bundled via Livewire). SCSS compiled via Vite from `resources/scss/style.scss`. Livewire 3 is used for the `Article` component (`app/Livewire/Article.php`) which handles inline article expansion and read-later toggling without page reloads.
 
 ### Public profile
 

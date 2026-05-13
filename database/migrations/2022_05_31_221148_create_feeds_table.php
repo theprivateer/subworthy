@@ -17,8 +17,8 @@ class CreateFeedsTable extends Migration
             $table->id();
             $table->string('url');
             $table->string('protocol_less_url');
-            $table->string('title');
-            $table->string('link');
+            $table->string('title')->nullable();
+            $table->string('link')->nullable();
             $table->string('tld');
             $table->text('description')->nullable();
             $table->string('fetcher')->nullable();
