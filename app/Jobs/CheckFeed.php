@@ -19,6 +19,9 @@ class CheckFeed implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 3;
+    public int $timeout = 300;
+
     /**
      * @var \App\Models\Feed
      */
@@ -96,13 +99,10 @@ class CheckFeed implements ShouldQueue
     private function processPost($data)
     {
         // Stops us from repopulating old posts that have been pruned
-        $exists = ArchivedPost::query()
-                            ->where('source_id', $data->getId())
-                            ->where('feed_id', $this->feed->id)
-                            ->get();
-
-        if($exists->count())
-        {
+        if (ArchivedPost::query()
+            ->where('source_id', $data->getId())
+            ->where('feed_id', $this->feed->id)
+            ->exists()) {
             return;
         }
 
@@ -160,6 +160,14 @@ class CheckFeed implements ShouldQueue
                 dispatch(new FetchFullPost($post, (new $this->feed->fetcher)));
             }
         }
+    }
+
+    public function failed(?\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('CheckFeed failed', [
+            'feed_id' => $this->feed->id,
+            'error' => $exception?->getMessage(),
+        ]);
     }
 
     private function isAudioRSS($post)

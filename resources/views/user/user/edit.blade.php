@@ -26,7 +26,7 @@
                         <span class="text-muted small">Optional</span>
                     </label>
                     <div class="input-group">
-                        <span class="input-group-text pe-1">{{ config('app.url') }}/@</span>
+                        <span class="input-group-text pe-1">{{ url('/') }}/@</span>
                         <input type="text" class="form-control ps-1 @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username) }}">
                     </div>
 

@@ -29,9 +29,7 @@ class FeedController extends Controller
      */
     public function store(Request $request)
     {
-        // validation on the URL
-
-        $data = $request->all();
+        $data = $request->validate(['url' => 'required|string']);
 
         Reader::setHttpClient(new GuzzleClient());
 

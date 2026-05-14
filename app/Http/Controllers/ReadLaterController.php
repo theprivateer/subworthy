@@ -16,22 +16,25 @@ class ReadLaterController extends Controller
                             ->oldest()
                             ->get();
 
-        if($posts->count() == 0)
+        if($posts->isEmpty())
         {
             return redirect()->route('home');
         }
 
-
         // TODO: Order feeds in a uniform way
         $posts = $posts->groupBy('post.feed_id');
 
-        $posts = $posts->each(function ($item, $index) {
-            $subscription = Subscription::where('user_id', auth()->id())
-                ->where('feed_id', $item->first()->post->feed_id)
-                ->first();
+        // Pre-load all subscriptions keyed by feed_id to avoid N+1 queries.
+        $subscriptions = Subscription::where('user_id', auth()->id())
+            ->whereIn('feed_id', $posts->keys())
+            ->get()
+            ->keyBy('feed_id');
+
+        $posts = $posts->each(function ($item, $index) use ($subscriptions) {
+            $subscription = $subscriptions->get($item->first()->post->feed_id);
 
             $item->each(function ($article) use ($subscription) {
-                $article->post->feed_title = $subscription->feed_title;
+                $article->post->feed_title = $subscription?->feed_title;
             });
         });
 

@@ -11,7 +11,11 @@ class Subscription extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'user_id',
+        'feed_id',
+        'title',
+    ];
 
     public function user(): BelongsTo
     {

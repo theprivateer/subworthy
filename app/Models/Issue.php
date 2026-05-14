@@ -11,11 +11,20 @@ class Issue extends Model
 {
     use HasFactory, Prunable;
 
-    protected $guarded = [];
-
-    protected $casts = [
-        'issue_date' => 'datetime',
+    protected $fillable = [
+        'user_id',
+        'edition',
+        'issue_date',
+        'posts',
+        'posts_excluded',
     ];
+
+    public function casts(): array
+    {
+        return [
+            'issue_date' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -41,16 +50,21 @@ class Issue extends Model
         $posts = $posts->groupBy('feed_id');
 
         $user = $this->user;
+
+        // Pre-load all relevant subscriptions keyed by feed_id to avoid N+1 queries.
+        $subscriptions = Subscription::where('user_id', $user->id)
+            ->whereIn('feed_id', $posts->keys())
+            ->get()
+            ->keyBy('feed_id');
+
         // Inject feed_title onto each post object so the view can show per-subscription
         // title overrides without an extra query per post. This mutates the model instances
         // in memory rather than going through a relation.
-        $posts = $posts->each(function ($item, $index) use ($user) {
-            $subscription = Subscription::where('user_id', $user->id)
-                                        ->where('feed_id', $item->first()->feed_id)
-                                        ->first();
+        $posts = $posts->each(function ($item, $index) use ($subscriptions) {
+            $subscription = $subscriptions->get($item->first()->feed_id);
 
             $item->each(function ($article) use ($subscription) {
-                $article->feed_title = $subscription->feed_title;
+                $article->feed_title = $subscription?->feed_title;
             });
         });
 

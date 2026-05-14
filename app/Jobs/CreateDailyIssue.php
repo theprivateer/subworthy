@@ -90,6 +90,13 @@ class CreateDailyIssue implements ShouldQueue
         // next run doesn't accumulate a growing lookback window of unsent posts.
         $this->user->last_delivered_at = Carbon::now();
         $this->user->save();
+    }
 
+    public function failed(?\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('CreateDailyIssue failed', [
+            'user_id' => $this->user->id,
+            'error' => $exception?->getMessage(),
+        ]);
     }
 }

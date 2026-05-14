@@ -19,9 +19,11 @@ class SubscriptionController extends Controller
 
     public function update(Request $request, Subscription $subscription)
     {
-        $subscription->update([
-            'title' => $request->get('title'),
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
         ]);
+
+        $subscription->update($validated);
 
         return back();
     }

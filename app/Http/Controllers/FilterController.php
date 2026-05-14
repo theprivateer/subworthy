@@ -27,17 +27,16 @@ class FilterController extends Controller
 
     public function update(Request $request, Filter $filter)
     {
-
-        $this->validate($request, [
+        $validated = $request->validate([
             'field_' . $filter->id => 'required',
             'operator_' . $filter->id => 'required',
             'pattern_' . $filter->id => 'required',
         ]);
 
         $filter->update([
-           'field' => $request->get('field_' . $filter->id),
-           'operator' => $request->get('operator_' . $filter->id),
-           'pattern' => $request->get('pattern_' . $filter->id),
+           'field' => $validated['field_' . $filter->id],
+           'operator' => $validated['operator_' . $filter->id],
+           'pattern' => $validated['pattern_' . $filter->id],
         ]);
 
         flash('Filter updated');

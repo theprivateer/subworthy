@@ -40,4 +40,12 @@ class EmailDailyIssue implements ShouldQueue
 
         $this->issue->user->notify(new NewIssue($this->issue));
     }
+
+    public function failed(?\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('EmailDailyIssue failed', [
+            'issue_id' => $this->issue->id,
+            'error' => $exception?->getMessage(),
+        ]);
+    }
 }

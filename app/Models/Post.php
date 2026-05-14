@@ -15,7 +15,18 @@ class Post extends Model
 {
     use HasFactory, Prunable;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'feed_id',
+        'source_id',
+        'url',
+        'title',
+        'preview',
+        'raw',
+        'fetched_raw',
+        'audio_url',
+        'published_at',
+        'modified_at',
+    ];
 
     public function feed(): BelongsTo
     {

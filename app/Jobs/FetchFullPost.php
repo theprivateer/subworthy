@@ -15,6 +15,9 @@ class FetchFullPost implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 3;
+    public int $timeout = 120;
+
     /**
      * @var \App\Models\Post
      */
@@ -43,5 +46,13 @@ class FetchFullPost implements ShouldQueue
     public function handle()
     {
         return $this->fetcher->fetch($this->post);
+    }
+
+    public function failed(?\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('FetchFullPost failed', [
+            'post_id' => $this->post->id,
+            'error' => $exception?->getMessage(),
+        ]);
     }
 }

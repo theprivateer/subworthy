@@ -11,7 +11,17 @@ class Feed extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'url',
+        'protocol_less_url',
+        'title',
+        'link',
+        'description',
+        'tld',
+        'fetcher',
+        'formatter',
+        'next_check_at',
+    ];
 
     public static function boot()
     {

@@ -66,9 +66,14 @@ class Article extends Component
 
     public function readLater()
     {
+        // Verify the viewer is the issue owner — prevents creating read-laters for other users.
+        if (!auth()->check() || auth()->id() !== $this->user->id) {
+            abort(403);
+        }
+
         ReadLater::create([
             'post_id' => $this->post->id,
-            'user_id' => $this->user->id,
+            'user_id' => auth()->id(),
         ]);
 
         $this->readingLater = true;
@@ -76,9 +81,13 @@ class Article extends Component
 
     public function removeReadLater()
     {
+        if (!auth()->check() || auth()->id() !== $this->user->id) {
+            abort(403);
+        }
+
         ReadLater::query()
             ->where('post_id', $this->post->id)
-            ->where('user_id', $this->user->id)
+            ->where('user_id', auth()->id())
             ->delete();
 
         $this->readingLater = false;

@@ -9,14 +9,14 @@ class PasswordController extends Controller
 {
     public function update(Request $request)
     {
-        $this->validate($request, [
-            'password' => 'required|confirmed',
+        $validated = $this->validate($request, [
+            'password' => 'required|confirmed|min:8',
         ]);
 
         $user = auth()->user();
 
         $user->update([
-            'password' => bcrypt($request->get('password'))
+            'password' => bcrypt($validated['password']),
         ]);
 
         flash('Password updated');

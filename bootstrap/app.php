@@ -40,7 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             $feeds = Feed::where('next_check_at', $time)->whereNotNull('next_check_at')->get();
 
             foreach ($feeds as $feed) {
-                dispatch(new CheckFeed($feed, false, env('REFRESH_POSTS', false)));
+                dispatch(new CheckFeed($feed, false, config('feeds.refresh_posts', false)));
             }
 
             $users = User::query()

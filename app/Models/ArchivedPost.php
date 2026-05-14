@@ -10,7 +10,10 @@ class ArchivedPost extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'feed_id',
+        'source_id',
+    ];
 
     public function feed(): BelongsTo
     {

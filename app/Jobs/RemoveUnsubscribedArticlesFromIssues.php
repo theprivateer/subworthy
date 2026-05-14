@@ -57,4 +57,12 @@ class RemoveUnsubscribedArticlesFromIssues implements ShouldQueue
             $issue->save();
         }
     }
+
+    public function failed(?\Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('RemoveUnsubscribedArticlesFromIssues failed', [
+            'user_id' => $this->user->id,
+            'error' => $exception?->getMessage(),
+        ]);
+    }
 }

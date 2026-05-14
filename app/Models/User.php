@@ -40,10 +40,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
-    protected $casts = [
-      'last_delivered_at' => 'datetime',
-      'last_interaction_at' => 'datetime',
-    ];
+    public function casts(): array
+    {
+        return [
+            'last_delivered_at' => 'datetime',
+            'last_interaction_at' => 'datetime',
+        ];
+    }
 
     public static function boot()
     {

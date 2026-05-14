@@ -10,7 +10,12 @@ class Filter extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'subscription_id',
+        'field',
+        'operator',
+        'pattern',
+    ];
 
     public function subscription(): BelongsTo
     {
