@@ -42,6 +42,25 @@
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </form>
 
+            <h3 class="h3 fw-bold pt-4 mb-4 text-center">Import Subscriptions</h3>
+
+            <form action="{{ route('feed.import') }}" method="POST" enctype="multipart/form-data" class="pb-4">
+                @csrf
+
+                <div class="mb-3">
+                    <label for="opml" class="form-label">Upload OPML File:</label>
+                    <input type="file" class="form-control @error('opml') is-invalid @enderror" id="opml" name="opml" accept=".opml,.xml,text/xml,application/xml">
+
+                    @error('opml')
+                    <div class="invalid-feedback">
+                        {{ $message }}
+                    </div>
+                    @enderror
+                </div>
+
+                <button type="submit" class="btn btn-outline-primary">Upload OPML</button>
+            </form>
+
             <h3 class="h3 fw-bold pt-4 mb-4 text-center" id="delivery">Delivery Details</h3>
 
             <form method="POST" action="{{ route('user.delivery') }}" class="pb-4">

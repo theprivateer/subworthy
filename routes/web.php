@@ -35,6 +35,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     Route::post('feed/create', [FeedController::class, 'store'])->name('feed.create');
+    Route::post('feed/import', [FeedController::class, 'import'])->name('feed.import');
 
     Route::get('subscription/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('subscription.edit');
     Route::post('subscription/{subscription}/edit', [SubscriptionController::class, 'update']);

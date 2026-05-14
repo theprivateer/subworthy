@@ -41,6 +41,7 @@ class UserControllerTest extends TestCase
             ->get('/user')
             ->assertOk()
             ->assertViewIs('user.user.edit')
+            ->assertSee('Upload OPML')
             ->assertViewHas('user', fn ($u) => $u->id === $user->id)
             ->assertViewHas('timezone')
             ->assertViewHas('times');

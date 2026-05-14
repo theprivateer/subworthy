@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\CheckFeed;
+use App\Jobs\ProcessOpmlImport;
 use App\Models\Feed;
 use App\Models\Subscription;
 use App\Models\User;
@@ -12,7 +13,9 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Laminas\Feed\Reader\Reader;
 use Tests\TestCase;
 
@@ -70,6 +73,11 @@ class FeedControllerTest extends TestCase
         $html = "<html><head>{$links}</head><body></body></html>";
 
         return new Response(200, ['Content-Type' => 'text/html'], $html);
+    }
+
+    private function opmlUpload(string $content): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent('subscriptions.opml', $content);
     }
 
     // -------------------------------------------------------------------------
@@ -195,6 +203,79 @@ class FeedControllerTest extends TestCase
             ->post('/feed/create', ['url' => 'https://example.com'])
             ->assertViewIs('feed.create')
             ->assertViewHas('feedLinks');
+    }
+
+    // -------------------------------------------------------------------------
+    // OPML import
+    // -------------------------------------------------------------------------
+
+    public function test_opml_import_stores_upload_and_dispatches_parser_job(): void
+    {
+        Queue::fake([ProcessOpmlImport::class]);
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $opml = <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <opml version="2.0">
+              <body>
+                <outline text="One" xmlUrl="https://example.com/one.xml" />
+                <outline text="Two" xmlUrl="https://example.com/two.xml" />
+              </body>
+            </opml>
+            XML;
+
+        $this->actingAs($user)
+            ->post('/feed/import', ['opml' => $this->opmlUpload($opml)])
+            ->assertRedirect('/home');
+
+        Queue::assertPushed(ProcessOpmlImport::class, function (ProcessOpmlImport $job) use ($user) {
+            Storage::disk('local')->assertExists($job->path);
+
+            return $job->userId === $user->id
+                && str_starts_with($job->path, 'opml-imports/');
+        });
+        $this->assertEquals('OPML import queued. Your subscriptions will appear as the import runs.', session('flash'));
+    }
+
+    public function test_opml_import_does_not_create_subscriptions_synchronously(): void
+    {
+        Queue::fake([ProcessOpmlImport::class]);
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $opml = <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <opml version="2.0">
+              <body>
+                <outline text="Folder">
+                  <outline text="Nested" xmlUrl="https://example.com/nested.xml" />
+                </outline>
+              </body>
+            </opml>
+            XML;
+
+        $this->actingAs($user)
+            ->post('/feed/import', ['opml' => $this->opmlUpload($opml)])
+            ->assertRedirect('/home');
+
+        $this->assertDatabaseCount('feeds', 0);
+        $this->assertDatabaseCount('subscriptions', 0);
+    }
+
+    public function test_unauthenticated_users_cannot_import_opml(): void
+    {
+        Queue::fake([ProcessOpmlImport::class]);
+
+        $opml = <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <opml version="2.0"><body></body></opml>
+            XML;
+
+        $this->post('/feed/import', ['opml' => $this->opmlUpload($opml)])
+            ->assertRedirect('/login');
+
+        Queue::assertNotPushed(ProcessOpmlImport::class);
     }
 
     // -------------------------------------------------------------------------

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Feed;
-use App\Models\Subscription;
+use App\Actions\SubscribeToFeed;
+use App\Jobs\ProcessOpmlImport;
 use App\Reader\GuzzleClient;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\File;
 use Laminas\Feed\Reader\Reader;
-use League\Uri\Uri;
 
 class FeedController extends Controller
 {
@@ -27,7 +29,7 @@ class FeedController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, SubscribeToFeed $subscribeToFeed): RedirectResponse|View
     {
         $data = $request->validate(['url' => 'required|string']);
 
@@ -74,33 +76,7 @@ class FeedController extends Controller
             }
         }
 
-        // If we get to this point we can proceed with subscription
-        $url = rtrim($data['url'], '/');
-        $uri = Uri::createFromString($url);
-        $scheme = $uri->getScheme();
-
-        $protocol_less_url = str_replace($scheme . '://', '', $url);
-
-        $feed = Feed::where('protocol_less_url', $protocol_less_url)->first();
-
-        if( ! $feed)
-        {
-            $feed = Feed::create([
-                'url'    => $url,
-                'protocol_less_url' => $protocol_less_url,
-            ]);
-        }
-
-        $subscription = Subscription::firstOrCreate([
-           'user_id' => auth()->user()->id,
-            'feed_id' => $feed->id,
-        ]);
-
-        // if this is a new feed record only...
-        if($feed->wasRecentlyCreated === true)
-        {
-            dispatch(new \App\Jobs\CheckFeed($feed, true));
-        }
+        $subscription = $subscribeToFeed($request->user()->id, $data['url']);
 
         if($subscription->wasRecentlyCreated === true)
         {
@@ -109,6 +85,26 @@ class FeedController extends Controller
         {
             flash('A Subscription to this Feed already exists');
         }
+
+        return redirect()->route('home');
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'opml' => [
+                'required',
+                File::types(['opml', 'xml'])->max('1mb'),
+            ],
+        ]);
+
+        // Persist the upload only long enough for the parser job to read it; the job is
+        // responsible for deleting the file after success or failure.
+        $path = $data['opml']->store('opml-imports', 'local');
+
+        dispatch(new ProcessOpmlImport($request->user()->id, $path));
+
+        flash('OPML import queued. Your subscriptions will appear as the import runs.');
 
         return redirect()->route('home');
     }

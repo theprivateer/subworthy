@@ -48,7 +48,7 @@
                         @foreach($subscriptions as $subscription)
                             <div class="list-group-item d-flex">
                                 <div class="flex-grow-1 position-relative">
-                                    <a href="{{ route('subscription.edit', $subscription) }}" class="stretched-link">{{ $subscription->title ?? $subscription->feed->title }}</a>
+                                    <a href="{{ route('subscription.edit', $subscription) }}" class="stretched-link">{{ $subscription->title ?? $subscription->feed->title ?? $subscription->feed->protocol_less_url }}</a>
                                     @if($subscription->feed->description)
                                         <span class="text-muted d-block small">{!! $subscription->feed->description !!}</span>
                                     @endif
