@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Issue;
+use App\Models\ReadLater;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -153,5 +156,66 @@ class UserModelTest extends TestCase
         ]);
 
         $this->assertFalse($user->hasDefaultDeliverySettings());
+    }
+
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
+
+    public function test_subscriptions_relation_returns_only_the_users_own_subscriptions(): void
+    {
+        $user         = User::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $user->id]);
+        Subscription::factory()->create(); // belongs to a different user
+
+        $this->assertTrue($user->subscriptions->contains($subscription));
+        $this->assertCount(1, $user->subscriptions);
+    }
+
+    public function test_issues_relation_returns_only_the_users_own_issues(): void
+    {
+        $user  = User::factory()->create();
+        $issue = Issue::factory()->create(['user_id' => $user->id]);
+        Issue::factory()->create(); // belongs to a different user
+
+        $this->assertTrue($user->issues->contains($issue));
+        $this->assertCount(1, $user->issues);
+    }
+
+    public function test_read_laters_relation_returns_only_the_users_own_items(): void
+    {
+        $user      = User::factory()->create();
+        $readLater = ReadLater::factory()->create(['user_id' => $user->id]);
+        ReadLater::factory()->create(); // belongs to a different user
+
+        $this->assertTrue($user->readLaters->contains($readLater));
+        $this->assertCount(1, $user->readLaters);
+    }
+
+    // -------------------------------------------------------------------------
+    // logInteraction()
+    // -------------------------------------------------------------------------
+
+    public function test_log_interaction_updates_last_interaction_at_timestamp(): void
+    {
+        $user   = User::factory()->create(['last_interaction_at' => null]);
+        $before = now();
+
+        $user->logInteraction();
+
+        $user->refresh();
+        $this->assertNotNull($user->last_interaction_at);
+        $this->assertTrue($user->last_interaction_at->isAfter($before->subSecond()));
+    }
+
+    public function test_log_interaction_overwrites_a_previous_timestamp(): void
+    {
+        $past = now()->subDay();
+        $user = User::factory()->create(['last_interaction_at' => $past]);
+
+        $user->logInteraction();
+
+        $user->refresh();
+        $this->assertTrue($user->last_interaction_at->isAfter($past));
     }
 }
