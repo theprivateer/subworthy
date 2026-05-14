@@ -12,7 +12,7 @@
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
         "league/uri": "^7.0",
-        "livewire/livewire": "^3.4",
+        "livewire/livewire": "^4.0",
         "spatie/laravel-honeypot": "^4.5",
         "symfony/browser-kit": "^7.0",
         "symfony/dom-crawler": "^7.0",
