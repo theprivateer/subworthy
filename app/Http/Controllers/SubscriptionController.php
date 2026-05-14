@@ -10,6 +10,8 @@ class SubscriptionController extends Controller
 {
     public function edit(Subscription $subscription)
     {
+        abort_if($subscription->user_id !== auth()->id(), 404);
+
         $subscription->load('feed', 'filters');
 
         return view('subscription.edit', [
@@ -19,6 +21,8 @@ class SubscriptionController extends Controller
 
     public function update(Request $request, Subscription $subscription)
     {
+        abort_if($subscription->user_id !== auth()->id(), 404);
+
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
         ]);
@@ -30,6 +34,8 @@ class SubscriptionController extends Controller
 
     public function destroy(Subscription $subscription)
     {
+        abort_if($subscription->user_id !== auth()->id(), 404);
+
         $subscription->delete();
 
         dispatch(new RemoveUnsubscribedArticlesFromIssues($subscription->user));
