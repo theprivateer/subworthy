@@ -59,4 +59,24 @@ class EmailDailyIssueTest extends TestCase
             fn (NewIssue $notification) => $notification->toMail($user)->subject === 'Subworthy, Issue 7'
         );
     }
+
+    public function test_notification_is_sent_to_the_users_email_address(): void
+    {
+        Notification::fake();
+
+        $user  = User::factory()->create(['email' => 'reader@example.com']);
+        $feed  = Feed::factory()->create();
+        Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
+        $post  = Post::factory()->create(['feed_id' => $feed->id]);
+
+        $issue = Issue::factory()->create([
+            'user_id' => $user->id,
+            'posts'   => json_encode([$post->id]),
+        ]);
+
+        EmailDailyIssue::dispatchSync($issue);
+
+        Notification::assertSentTo($user, NewIssue::class);
+        $this->assertSame('reader@example.com', $user->routeNotificationFor('mail'));
+    }
 }

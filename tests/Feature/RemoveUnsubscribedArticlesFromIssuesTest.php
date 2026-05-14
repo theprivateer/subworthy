@@ -85,6 +85,23 @@ class RemoveUnsubscribedArticlesFromIssuesTest extends TestCase
         $this->assertNotContains($inactivePost->id, json_decode($issue2->fresh()->posts));
     }
 
+    public function test_issue_with_all_posts_removed_has_empty_json_array(): void
+    {
+        $user             = User::factory()->create();
+        $unsubscribedFeed = Feed::factory()->create();
+
+        $post  = Post::factory()->create(['feed_id' => $unsubscribedFeed->id]);
+        $issue = Issue::factory()->create([
+            'user_id' => $user->id,
+            'posts'   => json_encode([$post->id]),
+        ]);
+
+        RemoveUnsubscribedArticlesFromIssues::dispatchSync($user);
+
+        $issue->refresh();
+        $this->assertSame('[]', $issue->posts);
+    }
+
     public function test_other_users_issues_are_not_affected(): void
     {
         $user      = User::factory()->create();

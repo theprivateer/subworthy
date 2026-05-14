@@ -119,4 +119,17 @@ class PostModelTest extends TestCase
         $this->assertDatabaseHas('posts', ['id' => $post->id]);
         $this->assertDatabaseCount('archived_posts', 0);
     }
+
+    public function test_archived_posts_are_not_pruned(): void
+    {
+        $feed   = Feed::factory()->create();
+        $record = ArchivedPost::factory()->create([
+            'feed_id'    => $feed->id,
+            'created_at' => now()->subMonths(2),
+        ]);
+
+        Artisan::call('model:prune', ['--model' => 'App\Models\Post']);
+
+        $this->assertDatabaseHas('archived_posts', ['id' => $record->id]);
+    }
 }

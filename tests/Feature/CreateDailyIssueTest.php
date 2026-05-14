@@ -139,6 +139,33 @@ class CreateDailyIssueTest extends TestCase
         $this->assertContains($excludedPost->id, json_decode($issue->posts_excluded));
     }
 
+    public function test_no_issue_is_created_when_all_posts_are_filtered_out(): void
+    {
+        Queue::fake([EmailDailyIssue::class]);
+
+        $user         = User::factory()->create(['last_delivered_at' => now()->subDay()]);
+        $feed         = Feed::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
+
+        Filter::factory()->create([
+            'subscription_id' => $subscription->id,
+            'field'           => 'title',
+            'operator'        => 'contains',
+            'pattern'         => 'exclude me',
+        ]);
+
+        Post::factory()->create([
+            'feed_id'    => $feed->id,
+            'title'      => 'Please exclude me',
+            'created_at' => now()->subHour(),
+        ]);
+
+        CreateDailyIssue::dispatchSync($user);
+
+        $this->assertDatabaseCount('issues', 0);
+        Queue::assertNotPushed(EmailDailyIssue::class);
+    }
+
     // -------------------------------------------------------------------------
     // last_delivered_at
     // -------------------------------------------------------------------------
