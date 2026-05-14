@@ -265,6 +265,29 @@ $url = action([UserController::class, 'show'], $user);
 
 **Helpers**: `url()` absolute URL, `route()` named routes, `action()` controller methods, `asset()` for assets
 
+### Config Files
+
+When generating or editing any file in `config/`, document every key using Laravel's standard block-comment style:
+
+```php
+/*
+|--------------------------------------------------------------------------
+| Section Title
+|--------------------------------------------------------------------------
+|
+| One or two sentences explaining what this option controls and when you
+| would change it. Mention the env() fallback and its default value.
+|
+*/
+
+'option_key' => env('ENV_VAR', 'default'),
+```
+
+- Every top-level key must have its own `|---|` block comment above it.
+- Comments explain the *purpose and effect* of the option, not just its name.
+- Reference the corresponding `env()` variable and default value in the comment when one is used.
+- Match the indentation and brace style of existing Laravel config files exactly.
+
 ### Common Mistakes
 
 - Never `$request->all()` (use `validated()`), lazy load in loops (use `with()`), `count() > 0` (use `exists()`), `$user->posts->count()` (use `withCount()`), `env()` outside config (use `config()`), full models in jobs (use IDs), `config('app.url') . '/path'` (use `url()`, `route()`)
