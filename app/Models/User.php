@@ -28,6 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'timezone',
         'delivery_time_local',
         'days_of_week',
+        'paused',
     ];
 
     /**
@@ -43,8 +44,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function casts(): array
     {
         return [
-            'last_delivered_at' => 'datetime',
+            'last_delivered_at'  => 'datetime',
             'last_interaction_at' => 'datetime',
+            'paused'             => 'datetime',
         ];
     }
 
