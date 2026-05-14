@@ -96,7 +96,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/boost (BOOST) - v2
 - laravel/breeze (BREEZE) - v2
 - laravel/mcp (MCP) - v0
-- laravel/sail (SAIL) - v1
 - phpunit/phpunit (PHPUNIT) - v11
 
 ## Skills Activation
