@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Ai\Agents\PostSummariser;
 use App\Jobs\CheckFeed;
 use App\Jobs\FetchFullPost;
+use App\Jobs\SummarisePost;
 use App\Models\ArchivedPost;
 use App\Models\Feed;
 use App\Models\Post;
@@ -26,6 +28,7 @@ class CheckFeedTest extends TestCase
     {
         parent::setUp();
         Reader::reset();
+        PostSummariser::fake(['Test summary.']);
     }
 
     protected function tearDown(): void
@@ -279,6 +282,36 @@ class CheckFeedTest extends TestCase
         CheckFeed::dispatchSync($feed);
 
         Queue::assertNotPushed(FetchFullPost::class);
+    }
+
+    public function test_summarise_post_is_dispatched_when_feed_has_no_fetcher(): void
+    {
+        Queue::fake([SummarisePost::class]);
+
+        $feed = Feed::factory()->create(['fetcher' => null]);
+
+        $this->bindMockResponse($this->feedXml([
+            ['guid' => 'summarise-guid', 'pubDate' => now()->subHour()->toRfc2822String()],
+        ]));
+
+        CheckFeed::dispatchSync($feed);
+
+        Queue::assertPushed(SummarisePost::class);
+    }
+
+    public function test_summarise_post_is_not_dispatched_when_feed_has_a_fetcher(): void
+    {
+        Queue::fake([FetchFullPost::class, SummarisePost::class]);
+
+        $feed = Feed::factory()->create(['fetcher' => \App\Fetchers\ProducthuntFetcher::class]);
+
+        $this->bindMockResponse($this->feedXml([
+            ['guid' => 'fetcher-summarise-guid', 'pubDate' => now()->subHour()->toRfc2822String()],
+        ]));
+
+        CheckFeed::dispatchSync($feed);
+
+        Queue::assertNotPushed(SummarisePost::class);
     }
 
     // -------------------------------------------------------------------------

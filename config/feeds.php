@@ -15,4 +15,17 @@ return [
 
     'refresh_posts' => env('REFRESH_POSTS', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Post Summary Minimum Word Count
+    |--------------------------------------------------------------------------
+    |
+    | Posts with fewer words than this threshold will be skipped during AI
+    | summarisation. Short posts and RSS previews rarely benefit from a
+    | generated summary. Set POST_SUMMARY_MIN_WORDS in your .env to override.
+    |
+    */
+
+    'summarise_min_words' => env('POST_SUMMARY_MIN_WORDS', 50),
+
 ];

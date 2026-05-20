@@ -9,6 +9,7 @@
         "ezyang/htmlpurifier": "^4.13",
         "guzzlehttp/guzzle": "^7.2",
         "laminas/laminas-feed": "^2.14",
+        "laravel/ai": "^0.7.0",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
         "league/uri": "^7.0",

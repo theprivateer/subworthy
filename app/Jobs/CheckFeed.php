@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\SummarisePost;
 use App\Models\ArchivedPost;
 use App\Models\Feed;
 use App\Models\Post;
@@ -154,10 +155,13 @@ class CheckFeed implements ShouldQueue
                 $post->update($insert);
             }
 
-            // If there is a custom fetcher for this feed, trigger that now
+            // If there is a custom fetcher for this feed, trigger that now.
+            // FetchFullPost will dispatch SummarisePost once enriched content is available.
             if($this->feed->fetcher)
             {
                 dispatch(new FetchFullPost($post, (new $this->feed->fetcher)));
+            } else {
+                SummarisePost::dispatch($post);
             }
         }
     }

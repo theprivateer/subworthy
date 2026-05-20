@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Fetchers\FetcherContract;
+use App\Jobs\SummarisePost;
 use App\Models\Post;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -45,7 +46,11 @@ class FetchFullPost implements ShouldQueue
      */
     public function handle()
     {
-        return $this->fetcher->fetch($this->post);
+        $result = $this->fetcher->fetch($this->post);
+
+        SummarisePost::dispatch($this->post->fresh());
+
+        return $result;
     }
 
     public function failed(?\Throwable $exception): void

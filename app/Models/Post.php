@@ -23,6 +23,7 @@ class Post extends Model
         'preview',
         'raw',
         'fetched_raw',
+        'summary',
         'audio_url',
         'published_at',
         'modified_at',
