@@ -14,6 +14,24 @@ class SummarisePostTest extends TestCase
     use RefreshDatabase;
 
     // -------------------------------------------------------------------------
+    // No AI provider configured
+    // -------------------------------------------------------------------------
+
+    public function test_job_skips_silently_when_no_api_key_is_configured(): void
+    {
+        PostSummariser::fake();
+
+        config(['ai.providers.openai.key' => null]);
+
+        $post = Post::factory()->create(['raw' => str_repeat('word ', 60)]);
+
+        (new SummarisePost($post))->handle();
+
+        PostSummariser::assertNeverPrompted();
+        $this->assertNull($post->fresh()->summary);
+    }
+
+    // -------------------------------------------------------------------------
     // Word threshold
     // -------------------------------------------------------------------------
 

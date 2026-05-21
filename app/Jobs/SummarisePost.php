@@ -19,6 +19,11 @@ class SummarisePost implements ShouldQueue
 
     public function handle(): void
     {
+        $defaultProvider = config('ai.default');
+        if (blank(config("ai.providers.{$defaultProvider}.key"))) {
+            return;
+        }
+
         $content = strip_tags($this->post->fetched_raw ?? $this->post->raw ?? '');
 
         if (str_word_count($content) < config('feeds.summarise_min_words')) {
