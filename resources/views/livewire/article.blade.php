@@ -111,7 +111,7 @@
             </div>
 
             <div class="col-md-7">
-                {!! $post->preview !!}
+                {!! $post->summary ?? $post->preview !!}
 
                 <p>
                     <a href="#post_{{ $post->id }}" class="fw-bold text-dark text-decoration-none" wire:click.prevent="showFull">
