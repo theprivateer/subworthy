@@ -28,7 +28,7 @@ class CheckFeedTest extends TestCase
     {
         parent::setUp();
         Reader::reset();
-        PostSummariser::fake(['Test summary.']);
+        PostSummariser::fake();
     }
 
     protected function tearDown(): void

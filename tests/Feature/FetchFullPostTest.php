@@ -18,7 +18,7 @@ class FetchFullPostTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        PostSummariser::fake(['Test summary.']);
+        PostSummariser::fake();
     }
 
     public function test_fetcher_fetch_is_called_with_the_post(): void

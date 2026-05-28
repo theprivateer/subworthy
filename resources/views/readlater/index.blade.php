@@ -45,7 +45,7 @@
                         </h2>
 
                         @foreach($feed as $post)
-                            <livewire:article :post="$post->post" :user="auth()->user()" :authUser="auth()->user()" :readLater="$post" :showRemove="true" :showExpiry="true" />
+                            <livewire:article :post="$post->post" :user="auth()->user()" :authUser="auth()->user()" :readLater="$post" :showRemove="true" :showExpiry="true" wire:key="article-{{ $post->post->id }}" />
                         @endforeach
                     </div>
 

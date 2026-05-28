@@ -26,13 +26,16 @@ class SummarisePost implements ShouldQueue
 
         $content = strip_tags($this->post->fetched_raw ?? $this->post->raw ?? '');
 
-        if (str_word_count($content) < config('feeds.summarise_min_words')) {
+        if (blank($content)) {
             return;
         }
 
         $response = (new PostSummariser)->prompt("Summarise this article:\n\n{$content}");
 
-        $this->post->update(['summary' => $response->text]);
+        $this->post->update([
+            'summary' => str_word_count($content) >= config('feeds.summarise_min_words') ? $response['summary'] : null,
+            'themes'  => $response['themes'],
+        ]);
     }
 
     public function failed(?\Throwable $exception): void

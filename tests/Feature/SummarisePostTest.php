@@ -29,15 +29,19 @@ class SummarisePostTest extends TestCase
 
         PostSummariser::assertNeverPrompted();
         $this->assertNull($post->fresh()->summary);
+        $this->assertNull($post->fresh()->themes);
     }
 
     // -------------------------------------------------------------------------
     // Word threshold
     // -------------------------------------------------------------------------
 
-    public function test_post_below_word_threshold_is_not_summarised(): void
+    public function test_post_below_word_threshold_gets_themes_but_not_summary(): void
     {
-        PostSummariser::fake();
+        PostSummariser::fake(fn () => [
+            'summary' => 'Generated summary.',
+            'themes'  => ['technology'],
+        ]);
 
         $post = Post::factory()->create([
             'raw' => str_repeat('word ', 49),
@@ -46,13 +50,17 @@ class SummarisePostTest extends TestCase
 
         (new SummarisePost($post))->handle();
 
-        PostSummariser::assertNeverPrompted();
+        PostSummariser::assertPrompted(fn ($p) => true);
         $this->assertNull($post->fresh()->summary);
+        $this->assertEquals(['technology'], $post->fresh()->themes);
     }
 
     public function test_post_at_word_threshold_is_summarised(): void
     {
-        PostSummariser::fake(['Generated summary.']);
+        PostSummariser::fake(fn () => [
+            'summary' => 'Generated summary.',
+            'themes'  => ['technology'],
+        ]);
 
         $post = Post::factory()->create([
             'raw' => str_repeat('word ', 50),
@@ -70,7 +78,10 @@ class SummarisePostTest extends TestCase
 
     public function test_raw_content_is_used_when_fetched_raw_is_absent(): void
     {
-        PostSummariser::fake(['Summary from raw.']);
+        PostSummariser::fake(fn () => [
+            'summary' => 'Summary from raw.',
+            'themes'  => ['culture'],
+        ]);
 
         $post = Post::factory()->create([
             'raw' => str_repeat('word ', 60),
@@ -84,7 +95,10 @@ class SummarisePostTest extends TestCase
 
     public function test_fetched_raw_is_preferred_over_raw_for_summarisation(): void
     {
-        PostSummariser::fake(['Summary from fetched.']);
+        PostSummariser::fake(fn () => [
+            'summary' => 'Summary from fetched.',
+            'themes'  => ['science'],
+        ]);
 
         $post = Post::factory()->create([
             'raw' => str_repeat('short ', 5),
@@ -97,7 +111,7 @@ class SummarisePostTest extends TestCase
         $this->assertEquals('Summary from fetched.', $post->fresh()->summary);
     }
 
-    public function test_post_with_null_content_is_skipped(): void
+    public function test_post_with_no_content_is_skipped_entirely(): void
     {
         PostSummariser::fake();
 
@@ -110,6 +124,7 @@ class SummarisePostTest extends TestCase
 
         PostSummariser::assertNeverPrompted();
         $this->assertNull($post->fresh()->summary);
+        $this->assertNull($post->fresh()->themes);
     }
 
     // -------------------------------------------------------------------------
@@ -118,9 +133,12 @@ class SummarisePostTest extends TestCase
 
     public function test_html_tags_are_stripped_before_word_count(): void
     {
-        PostSummariser::fake();
+        PostSummariser::fake(fn () => [
+            'summary' => 'Generated summary.',
+            'themes'  => ['technology'],
+        ]);
 
-        // 49 words of text wrapped in HTML — tags must not count towards the threshold
+        // 49 words of text wrapped in HTML — tags must not count towards the summary threshold
         $words = str_repeat('word ', 49);
         $post = Post::factory()->create([
             'raw' => "<div><p><strong>{$words}</strong></p></div>",
@@ -129,7 +147,31 @@ class SummarisePostTest extends TestCase
 
         (new SummarisePost($post))->handle();
 
-        PostSummariser::assertNeverPrompted();
+        // AI is still called (themes are always generated), but summary is withheld
+        PostSummariser::assertPrompted(fn ($p) => true);
+        $this->assertNull($post->fresh()->summary);
+        $this->assertNotNull($post->fresh()->themes);
+    }
+
+    // -------------------------------------------------------------------------
+    // Themes persistence
+    // -------------------------------------------------------------------------
+
+    public function test_themes_are_persisted_on_the_post(): void
+    {
+        PostSummariser::fake(fn () => [
+            'summary' => 'Generated summary.',
+            'themes'  => ['technology', 'business'],
+        ]);
+
+        $post = Post::factory()->create([
+            'raw' => str_repeat('word ', 60),
+            'fetched_raw' => null,
+        ]);
+
+        (new SummarisePost($post))->handle();
+
+        $this->assertEquals(['technology', 'business'], $post->fresh()->themes);
     }
 
     // -------------------------------------------------------------------------

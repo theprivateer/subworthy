@@ -24,10 +24,18 @@ class Post extends Model
         'raw',
         'fetched_raw',
         'summary',
+        'themes',
         'audio_url',
         'published_at',
         'modified_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'themes' => 'array',
+        ];
+    }
 
     public function feed(): BelongsTo
     {

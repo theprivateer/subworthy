@@ -12,7 +12,7 @@ class IssueController extends Controller
 
         $issue->user->logInteraction();
 
-        $authUser = false;
+        $authUser = null;
 
         if(auth()->check())
         {

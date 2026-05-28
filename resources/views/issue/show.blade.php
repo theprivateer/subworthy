@@ -60,7 +60,7 @@
             </h2>
 
             @foreach($feed as $post)
-                <livewire:article :post="$post" :user="$user" :authUser="$authUser" />
+                <livewire:article :post="$post" :user="$user" :authUser="$authUser" wire:key="article-{{ $post->id }}" />
             @endforeach
         </div>
 
@@ -160,7 +160,7 @@
                 if(currentlyOpen != null)
                 {
                     let el = document.getElementById(currentlyOpen).getAttribute('wire:id')
-                    let component = Livewire.find([el])
+                    let component = Livewire.find(el)
 
                     component.showPreview()
                 }
