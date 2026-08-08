@@ -23,7 +23,7 @@ class FetchFullPostTest extends TestCase
 
     public function test_fetcher_fetch_is_called_with_the_post(): void
     {
-        $post    = Post::factory()->create();
+        $post = Post::factory()->create();
         $fetcher = $this->createMock(FetcherContract::class);
         $fetcher->expects($this->once())->method('fetch')->with($this->equalTo($post));
 
@@ -32,7 +32,7 @@ class FetchFullPostTest extends TestCase
 
     public function test_fetcher_result_is_returned(): void
     {
-        $post    = Post::factory()->create();
+        $post = Post::factory()->create();
         $fetcher = $this->createMock(FetcherContract::class);
         $fetcher->method('fetch')->willReturn('fetched-content');
 
@@ -45,8 +45,23 @@ class FetchFullPostTest extends TestCase
     {
         Queue::fake([SummarisePost::class]);
 
-        $post    = Post::factory()->create();
+        $post = Post::factory()->create();
         $fetcher = $this->createMock(FetcherContract::class);
+
+        (new FetchFullPost($post, $fetcher))->handle();
+
+        Queue::assertPushed(SummarisePost::class);
+    }
+
+    public function test_dispatch_survives_a_post_deleted_during_the_fetch(): void
+    {
+        Queue::fake([SummarisePost::class]);
+
+        $post = Post::factory()->create();
+
+        // A prune between queueing and running would previously make the job dispatch null
+        $fetcher = $this->createMock(FetcherContract::class);
+        $fetcher->method('fetch')->willReturnCallback(fn (Post $p) => $p->delete());
 
         (new FetchFullPost($post, $fetcher))->handle();
 

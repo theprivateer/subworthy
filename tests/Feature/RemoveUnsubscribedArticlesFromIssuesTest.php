@@ -17,18 +17,18 @@ class RemoveUnsubscribedArticlesFromIssuesTest extends TestCase
 
     public function test_posts_from_unsubscribed_feeds_are_removed_from_issue(): void
     {
-        $user             = User::factory()->create();
-        $subscribedFeed   = Feed::factory()->create();
+        $user = User::factory()->create();
+        $subscribedFeed = Feed::factory()->create();
         $unsubscribedFeed = Feed::factory()->create();
 
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $subscribedFeed->id]);
 
-        $activePost   = Post::factory()->create(['feed_id' => $subscribedFeed->id]);
+        $activePost = Post::factory()->create(['feed_id' => $subscribedFeed->id]);
         $inactivePost = Post::factory()->create(['feed_id' => $unsubscribedFeed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$activePost->id, $inactivePost->id]),
+            'posts' => json_encode([$activePost->id, $inactivePost->id]),
         ]);
 
         RemoveUnsubscribedArticlesFromIssues::dispatchSync($user);
@@ -47,10 +47,10 @@ class RemoveUnsubscribedArticlesFromIssuesTest extends TestCase
 
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
 
-        $post  = Post::factory()->create(['feed_id' => $feed->id]);
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         RemoveUnsubscribedArticlesFromIssues::dispatchSync($user);
@@ -61,22 +61,22 @@ class RemoveUnsubscribedArticlesFromIssuesTest extends TestCase
 
     public function test_all_issues_for_the_user_are_updated(): void
     {
-        $user             = User::factory()->create();
-        $subscribedFeed   = Feed::factory()->create();
+        $user = User::factory()->create();
+        $subscribedFeed = Feed::factory()->create();
         $unsubscribedFeed = Feed::factory()->create();
 
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $subscribedFeed->id]);
 
-        $activePost   = Post::factory()->create(['feed_id' => $subscribedFeed->id]);
+        $activePost = Post::factory()->create(['feed_id' => $subscribedFeed->id]);
         $inactivePost = Post::factory()->create(['feed_id' => $unsubscribedFeed->id]);
 
         $issue1 = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$activePost->id, $inactivePost->id]),
+            'posts' => json_encode([$activePost->id, $inactivePost->id]),
         ]);
         $issue2 = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$inactivePost->id]),
+            'posts' => json_encode([$inactivePost->id]),
         ]);
 
         RemoveUnsubscribedArticlesFromIssues::dispatchSync($user);
@@ -87,13 +87,13 @@ class RemoveUnsubscribedArticlesFromIssuesTest extends TestCase
 
     public function test_issue_with_all_posts_removed_has_empty_json_array(): void
     {
-        $user             = User::factory()->create();
+        $user = User::factory()->create();
         $unsubscribedFeed = Feed::factory()->create();
 
-        $post  = Post::factory()->create(['feed_id' => $unsubscribedFeed->id]);
+        $post = Post::factory()->create(['feed_id' => $unsubscribedFeed->id]);
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         RemoveUnsubscribedArticlesFromIssues::dispatchSync($user);
@@ -104,16 +104,16 @@ class RemoveUnsubscribedArticlesFromIssuesTest extends TestCase
 
     public function test_other_users_issues_are_not_affected(): void
     {
-        $user      = User::factory()->create();
+        $user = User::factory()->create();
         $otherUser = User::factory()->create();
 
         $feed = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $otherUser->id, 'feed_id' => $feed->id]);
 
-        $post  = Post::factory()->create(['feed_id' => $feed->id]);
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
         $issue = Issue::factory()->create([
             'user_id' => $otherUser->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         // Run job for $user — should not touch $otherUser's issue.

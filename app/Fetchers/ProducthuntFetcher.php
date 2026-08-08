@@ -18,7 +18,7 @@ class ProducthuntFetcher extends AbstractFetcher implements FetcherContract
         $crawler->filter('#__NEXT_DATA__')->each(function ($node) use ($post) {
             $data = $this->extractData($node->text());
 
-            $data['fetched_raw'] = '<blockquote>' . $data['fetched_raw'] . '</blockquote>' . $post->raw;
+            $data['fetched_raw'] = '<blockquote>'.$data['fetched_raw'].'</blockquote>'.$post->raw;
             $post->update($data);
         });
 

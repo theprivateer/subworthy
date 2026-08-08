@@ -5,24 +5,23 @@ namespace App\Jobs;
 use App\Models\Issue;
 use App\Notifications\NewIssue;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class EmailDailyIssue implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     /**
-     * @var \App\Models\Issue
+     * @var Issue
      */
     private $issue;
 
     /**
      * Create a new job instance.
-     *
-     * @param \App\Models\Issue $issue
      */
     public function __construct(Issue $issue)
     {
@@ -43,7 +42,7 @@ class EmailDailyIssue implements ShouldQueue
 
     public function failed(?\Throwable $exception): void
     {
-        \Illuminate\Support\Facades\Log::error('EmailDailyIssue failed', [
+        Log::error('EmailDailyIssue failed', [
             'issue_id' => $this->issue->id,
             'error' => $exception?->getMessage(),
         ]);

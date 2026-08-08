@@ -28,15 +28,12 @@ class PostFilterService
     // Any single matching filter is enough to exclude — filters are OR'd, not AND'd.
     protected function runFilters()
     {
-        if( ! $this->filters->count())
-        {
+        if (! $this->filters->count()) {
             return false;
         }
 
-        foreach($this->filters as $filter)
-        {
-            if($this->runFilter($filter))
-            {
+        foreach ($this->filters as $filter) {
+            if ($this->runFilter($filter)) {
                 return true;
             }
         }
@@ -50,10 +47,9 @@ class PostFilterService
         // "does not contain"). Parentheses are stripped first because some operators
         // are stored as "regex()" style. The leading underscore avoids collisions with
         // any public method names if this class is extended.
-        $method = '_' . Str::of($filter->operator)->remove(['(', ')'])->camel();
+        $method = '_'.Str::of($filter->operator)->remove(['(', ')'])->camel();
 
-        if( ! method_exists($this, $method))
-        {
+        if (! method_exists($this, $method)) {
             return false;
         }
 

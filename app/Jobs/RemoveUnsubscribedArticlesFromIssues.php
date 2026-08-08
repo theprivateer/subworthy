@@ -6,21 +6,20 @@ use App\Models\Issue;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class RemoveUnsubscribedArticlesFromIssues implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * @var \App\Models\User
+     * @var User
      */
     private $user;
-
 
     /**
      * Create a new job instance.
@@ -42,8 +41,7 @@ class RemoveUnsubscribedArticlesFromIssues implements ShouldQueue
     {
         $issues = Issue::where('user_id', $this->user->id)->get();
 
-        foreach($issues as $issue)
-        {
+        foreach ($issues as $issue) {
             $active_subscriptions = $this->user->subscriptions()->pluck('feed_id')->all();
 
             $posts = Post::with('feed')
@@ -60,7 +58,7 @@ class RemoveUnsubscribedArticlesFromIssues implements ShouldQueue
 
     public function failed(?\Throwable $exception): void
     {
-        \Illuminate\Support\Facades\Log::error('RemoveUnsubscribedArticlesFromIssues failed', [
+        Log::error('RemoveUnsubscribedArticlesFromIssues failed', [
             'user_id' => $this->user->id,
             'error' => $exception?->getMessage(),
         ]);

@@ -15,14 +15,14 @@ class FeedFactory extends Factory
         $url = fake()->unique()->url();
 
         return [
-            'url'               => $url,
+            'url' => $url,
             'protocol_less_url' => preg_replace('#^https?://#', '', $url),
-            'title'             => fake()->company(),
-            'link'              => $url,
-            'description'       => fake()->sentence(),
-            'fetcher'           => null,
-            'formatter'         => null,
-            'next_check_at'     => null,
+            'title' => fake()->company(),
+            'link' => $url,
+            'description' => fake()->sentence(),
+            'fetcher' => null,
+            'formatter' => null,
+            'next_check_at' => null,
         ];
     }
 }

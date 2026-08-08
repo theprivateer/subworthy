@@ -15,8 +15,8 @@ class FilterFactory extends Factory
     {
         return [
             'subscription_id' => Subscription::factory(),
-            'field'           => fake()->randomElement(['title', 'preview', 'raw']),
-            'operator'        => fake()->randomElement([
+            'field' => fake()->randomElement(['title', 'preview', 'raw']),
+            'operator' => fake()->randomElement([
                 'contains',
                 'does not contain',
                 'equals',
@@ -24,7 +24,7 @@ class FilterFactory extends Factory
                 'regex()',
                 'regex no match',
             ]),
-            'pattern'         => fake()->word(),
+            'pattern' => fake()->word(),
         ];
     }
 }

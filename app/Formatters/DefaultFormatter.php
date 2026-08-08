@@ -10,8 +10,9 @@ use HTMLPurifier_Config;
 class DefaultFormatter implements FormatterContract
 {
     protected $purifier;
+
     /**
-     * @var \App\Models\Feed
+     * @var Feed
      */
     protected $feed;
 
@@ -30,23 +31,23 @@ class DefaultFormatter implements FormatterContract
             // and anchor tags wit the href attribute
             [
                 'HTML.Allowed',
-                'p,br,a[href],img[src|alt],blockquote,em,strong,ul,ol,li,pre,code,h1,h2,h3'
+                'p,br,a[href],img[src|alt],blockquote,em,strong,ul,ol,li,pre,code,h1,h2,h3',
             ],
             // Format end output with Tidy
             [
                 'Output.TidyFormat',
-                true
+                true,
             ],
             // Assume XHTML 1.0 Strict Doctype
             [
                 'HTML.Doctype',
-                'XHTML 1.0 Strict'
+                'XHTML 1.0 Strict',
             ],
             // Disable cache, but see note after the example
             [
                 'Cache.DefinitionImpl',
-                null
-            ]
+                null,
+            ],
         ];
 
         // Configuring HTMLPurifier
@@ -65,6 +66,7 @@ class DefaultFormatter implements FormatterContract
         $raw = $this->purifier->purify($raw);
 
         $raw = $this->addBlankTargetToAnchors($raw);
+
         return $this->substituteImageUrls($raw);
     }
 
@@ -75,7 +77,7 @@ class DefaultFormatter implements FormatterContract
         // The <?xml encoding> declaration forces DOMDocument into UTF-8 mode; without it
         // the parser defaults to ISO-8859-1 and mangles non-ASCII characters. The @ suppresses
         // warnings about malformed HTML tags — DOMDocument still parses them successfully.
-        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $raw);
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>'.$raw);
 
         foreach ($dom->getElementsByTagName('a') as $link) {
             $link->setAttribute('target', '_blank');
@@ -88,7 +90,7 @@ class DefaultFormatter implements FormatterContract
     {
         $dom = new DOMDocument;
         $dom->preserveWhiteSpace = false;
-        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $raw);
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>'.$raw);
 
         $tags = $dom->getElementsByTagName('img');
 
@@ -97,9 +99,8 @@ class DefaultFormatter implements FormatterContract
 
             // Distinguish root-relative paths (/images/foo.jpg) from protocol-relative URLs
             // (//cdn.example.com/foo.jpg). Only prepend the feed's domain to root-relative ones.
-            if($src[0] == '/' && $src[1] != '/')
-            {
-                $src = $this->feed->tld . $src;
+            if ($src[0] == '/' && $src[1] != '/') {
+                $src = $this->feed->tld.$src;
                 $tag->setAttribute('src', $src);
             }
         }

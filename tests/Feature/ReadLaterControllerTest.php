@@ -29,7 +29,7 @@ class ReadLaterControllerTest extends TestCase
 
     public function test_index_shows_posts_grouped_by_feed(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $feed1 = Feed::factory()->create();
         $feed2 = Feed::factory()->create();
         $post1 = Post::factory()->create(['feed_id' => $feed1->id]);
@@ -52,14 +52,14 @@ class ReadLaterControllerTest extends TestCase
         Subscription::factory()->create([
             'user_id' => $user->id,
             'feed_id' => $feed->id,
-            'title'   => 'My Override',
+            'title' => 'My Override',
         ]);
         $post = Post::factory()->create(['feed_id' => $feed->id]);
         ReadLater::factory()->create(['user_id' => $user->id, 'post_id' => $post->id]);
 
         $response = $this->actingAs($user)->get('/readlater');
 
-        $posts     = $response->viewData('posts');
+        $posts = $response->viewData('posts');
         $feedItems = $posts->first();
         $this->assertEquals('My Override', $feedItems->first()->post->feed_title);
     }
@@ -84,9 +84,9 @@ class ReadLaterControllerTest extends TestCase
 
     public function test_destroy_only_removes_the_authenticated_users_entry(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $other = User::factory()->create();
-        $post  = Post::factory()->create();
+        $post = Post::factory()->create();
 
         ReadLater::factory()->create(['user_id' => $user->id, 'post_id' => $post->id]);
         ReadLater::factory()->create(['user_id' => $other->id, 'post_id' => $post->id]);

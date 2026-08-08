@@ -13,9 +13,9 @@ class DeliveryControllerTest extends TestCase
     private function validPayload(): array
     {
         return [
-            'timezone'            => 'Europe/London',
+            'timezone' => 'Europe/London',
             'delivery_time_local' => '0900',
-            'days_of_week'        => [1, 2, 3, 4, 5],
+            'days_of_week' => [1, 2, 3, 4, 5],
         ];
     }
 
@@ -33,7 +33,7 @@ class DeliveryControllerTest extends TestCase
 
     public function test_update_rejects_invalid_timezone_string(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $payload = array_merge($this->validPayload(), ['timezone' => 'Not/ATimezone']);
 
         $this->actingAs($user)
@@ -43,7 +43,7 @@ class DeliveryControllerTest extends TestCase
 
     public function test_update_rejects_delivery_time_that_is_not_4_digits(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $payload = array_merge($this->validPayload(), ['delivery_time_local' => '930']);
 
         $this->actingAs($user)
@@ -53,7 +53,7 @@ class DeliveryControllerTest extends TestCase
 
     public function test_update_rejects_day_values_outside_1_to_7(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $payload = array_merge($this->validPayload(), ['days_of_week' => [0, 8]]);
 
         $this->actingAs($user)
@@ -63,7 +63,7 @@ class DeliveryControllerTest extends TestCase
 
     public function test_update_accepts_empty_days_of_week_and_stores_empty_string(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $payload = array_merge($this->validPayload(), ['days_of_week' => []]);
 
         $this->actingAs($user)->post('/user/delivery', $payload);
@@ -73,7 +73,7 @@ class DeliveryControllerTest extends TestCase
 
     public function test_update_accepts_null_days_of_week_and_stores_empty_string(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $payload = ['timezone' => 'UTC', 'delivery_time_local' => '0800'];
 
         $this->actingAs($user)->post('/user/delivery', $payload);

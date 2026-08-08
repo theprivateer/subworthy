@@ -10,7 +10,6 @@ use App\Models\Issue;
 use App\Models\Post;
 use App\Models\Subscription;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -109,26 +108,26 @@ class CreateDailyIssueTest extends TestCase
     {
         Queue::fake([EmailDailyIssue::class]);
 
-        $user         = User::factory()->create(['last_delivered_at' => now()->subDay()]);
-        $feed         = Feed::factory()->create();
+        $user = User::factory()->create(['last_delivered_at' => now()->subDay()]);
+        $feed = Feed::factory()->create();
         $subscription = Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
 
         Filter::factory()->create([
             'subscription_id' => $subscription->id,
-            'field'           => 'title',
-            'operator'        => 'contains',
-            'pattern'         => 'exclude me',
+            'field' => 'title',
+            'operator' => 'contains',
+            'pattern' => 'exclude me',
         ]);
 
         $excludedPost = Post::factory()->create([
-            'feed_id'    => $feed->id,
-            'title'      => 'Please exclude me',
+            'feed_id' => $feed->id,
+            'title' => 'Please exclude me',
             'created_at' => now()->subHour(),
         ]);
 
         $includedPost = Post::factory()->create([
-            'feed_id'    => $feed->id,
-            'title'      => 'Normal post title',
+            'feed_id' => $feed->id,
+            'title' => 'Normal post title',
             'created_at' => now()->subHour(),
         ]);
 
@@ -143,20 +142,20 @@ class CreateDailyIssueTest extends TestCase
     {
         Queue::fake([EmailDailyIssue::class]);
 
-        $user         = User::factory()->create(['last_delivered_at' => now()->subDay()]);
-        $feed         = Feed::factory()->create();
+        $user = User::factory()->create(['last_delivered_at' => now()->subDay()]);
+        $feed = Feed::factory()->create();
         $subscription = Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
 
         Filter::factory()->create([
             'subscription_id' => $subscription->id,
-            'field'           => 'title',
-            'operator'        => 'contains',
-            'pattern'         => 'exclude me',
+            'field' => 'title',
+            'operator' => 'contains',
+            'pattern' => 'exclude me',
         ]);
 
         Post::factory()->create([
-            'feed_id'    => $feed->id,
-            'title'      => 'Please exclude me',
+            'feed_id' => $feed->id,
+            'title' => 'Please exclude me',
             'created_at' => now()->subHour(),
         ]);
 
@@ -175,7 +174,7 @@ class CreateDailyIssueTest extends TestCase
         Queue::fake([EmailDailyIssue::class]);
 
         $before = now()->subDay();
-        $user   = User::factory()->create(['last_delivered_at' => $before]);
+        $user = User::factory()->create(['last_delivered_at' => $before]);
 
         // No subscriptions — nothing to include.
 
@@ -240,13 +239,13 @@ class CreateDailyIssueTest extends TestCase
     {
         Queue::fake([EmailDailyIssue::class]);
 
-        $user           = User::factory()->create(['last_delivered_at' => now()->subDay()]);
+        $user = User::factory()->create(['last_delivered_at' => now()->subDay()]);
         $subscribedFeed = Feed::factory()->create();
-        $otherFeed      = Feed::factory()->create();
+        $otherFeed = Feed::factory()->create();
 
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $subscribedFeed->id]);
 
-        $ownPost   = Post::factory()->create(['feed_id' => $subscribedFeed->id, 'created_at' => now()->subHour()]);
+        $ownPost = Post::factory()->create(['feed_id' => $subscribedFeed->id, 'created_at' => now()->subHour()]);
         $otherPost = Post::factory()->create(['feed_id' => $otherFeed->id, 'created_at' => now()->subHour()]);
 
         CreateDailyIssue::dispatchSync($user);

@@ -12,12 +12,11 @@ class ReadLaterController extends Controller
     public function index()
     {
         $posts = ReadLater::with('post', 'post.feed')
-                            ->where('user_id', auth()->id())
-                            ->oldest()
-                            ->get();
+            ->where('user_id', auth()->id())
+            ->oldest()
+            ->get();
 
-        if($posts->isEmpty())
-        {
+        if ($posts->isEmpty()) {
             return redirect()->route('home');
         }
 
@@ -42,7 +41,7 @@ class ReadLaterController extends Controller
         $posts = collect($posts)->sortKeys();
 
         return view('readlater.index', [
-           'posts' => $posts,
+            'posts' => $posts,
         ]);
     }
 

@@ -28,17 +28,15 @@ class Article extends Component
     public function mount()
     {
         // Issues are publicly accessible. $user is always the issue owner; $authUser is the
-        // currently logged-in visitor (or false). Only show the read-later button when the
+        // currently logged-in visitor (or null for a guest). Only show the read-later button when the
         // viewer is looking at their own issue.
-        if($this->authUser)
-        {
-            if($this->authUser->id == $this->user->id) {
+        if ($this->authUser) {
+            if ($this->authUser->id == $this->user->id) {
                 $this->showReadLaterButton = true;
 
                 $readLaters = $this->authUser->readLaters->pluck('post_id')->all();
 
-                if(in_array($this->post->id, $readLaters))
-                {
+                if (in_array($this->post->id, $readLaters)) {
                     $this->readingLater = true;
                 }
             }
@@ -54,20 +52,20 @@ class Article extends Component
     {
         $this->fullArticle = true;
 
-        $this->dispatch('postOpened', id: 'post_' . $this->post->id);
+        $this->dispatch('postOpened', id: 'post_'.$this->post->id);
     }
 
     public function showPreview()
     {
         $this->fullArticle = false;
 
-        $this->dispatch('postClosed', id: 'post_' . $this->post->uuid);
+        $this->dispatch('postClosed', id: 'post_'.$this->post->uuid);
     }
 
     public function readLater()
     {
         // Verify the viewer is the issue owner — prevents creating read-laters for other users.
-        if (!auth()->check() || auth()->id() !== $this->user->id) {
+        if (! auth()->check() || auth()->id() !== $this->user->id) {
             abort(403);
         }
 
@@ -81,7 +79,7 @@ class Article extends Component
 
     public function removeReadLater()
     {
-        if (!auth()->check() || auth()->id() !== $this->user->id) {
+        if (! auth()->check() || auth()->id() !== $this->user->id) {
             abort(403);
         }
 

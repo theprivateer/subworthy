@@ -21,7 +21,7 @@ class HomeControllerTest extends TestCase
 
     public function test_home_page_passes_subscriptions_to_view(): void
     {
-        $user         = User::factory()->create();
+        $user = User::factory()->create();
         $subscription = Subscription::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)

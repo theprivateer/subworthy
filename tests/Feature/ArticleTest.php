@@ -19,9 +19,9 @@ class ArticleTest extends TestCase
     private function makeSetup(): array
     {
         $owner = User::factory()->create();
-        $feed  = Feed::factory()->create();
+        $feed = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $owner->id, 'feed_id' => $feed->id]);
-        $post  = Post::factory()->create(['feed_id' => $feed->id]);
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
 
         return [$owner, $post];
     }
@@ -50,7 +50,7 @@ class ArticleTest extends TestCase
     public function test_mount_does_not_show_read_later_button_when_viewing_another_users_issue(): void
     {
         [$owner, $post] = $this->makeSetup();
-        $visitor        = User::factory()->create();
+        $visitor = User::factory()->create();
 
         Livewire::actingAs($visitor)
             ->test(Article::class, ['post' => $post, 'user' => $owner, 'authUser' => $visitor])
@@ -128,7 +128,7 @@ class ArticleTest extends TestCase
     public function test_read_later_returns_403_when_viewing_another_users_issue(): void
     {
         [$owner, $post] = $this->makeSetup();
-        $visitor        = User::factory()->create();
+        $visitor = User::factory()->create();
 
         Livewire::actingAs($visitor)
             ->test(Article::class, ['post' => $post, 'user' => $owner, 'authUser' => $visitor])
@@ -166,11 +166,49 @@ class ArticleTest extends TestCase
     public function test_remove_read_later_returns_403_for_unauthorised_user(): void
     {
         [$owner, $post] = $this->makeSetup();
-        $visitor        = User::factory()->create();
+        $visitor = User::factory()->create();
 
         Livewire::actingAs($visitor)
             ->test(Article::class, ['post' => $post, 'user' => $owner, 'authUser' => $visitor])
             ->call('removeReadLater')
             ->assertStatus(403);
+    }
+
+    // -------------------------------------------------------------------------
+    // Summary rendering
+    // -------------------------------------------------------------------------
+
+    public function test_summary_is_escaped_when_rendered(): void
+    {
+        [$owner, $post] = $this->makeSetup();
+
+        // The summary is model output derived from third-party feed content, so a feed author
+        // could steer it into emitting markup. Issues are public, so this must never render.
+        $post->update(['summary' => '<script>alert(1)</script>Ordinary prose.']);
+
+        Livewire::test(Article::class, ['post' => $post->fresh(), 'user' => $owner, 'authUser' => null])
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('Ordinary prose.');
+    }
+
+    public function test_preview_is_used_when_the_summary_is_empty(): void
+    {
+        [$owner, $post] = $this->makeSetup();
+
+        $post->update(['summary' => '', 'preview' => 'Preview text.']);
+
+        Livewire::test(Article::class, ['post' => $post->fresh(), 'user' => $owner, 'authUser' => null])
+            ->assertSee('Preview text.');
+    }
+
+    public function test_summary_takes_precedence_over_preview(): void
+    {
+        [$owner, $post] = $this->makeSetup();
+
+        $post->update(['summary' => 'Summary text.', 'preview' => 'Preview text.']);
+
+        Livewire::test(Article::class, ['post' => $post->fresh(), 'user' => $owner, 'authUser' => null])
+            ->assertSee('Summary text.')
+            ->assertDontSee('Preview text.');
     }
 }

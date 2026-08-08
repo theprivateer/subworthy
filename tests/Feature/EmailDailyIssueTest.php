@@ -21,14 +21,14 @@ class EmailDailyIssueTest extends TestCase
     {
         Notification::fake();
 
-        $user         = User::factory()->create();
-        $feed         = Feed::factory()->create();
+        $user = User::factory()->create();
+        $feed = Feed::factory()->create();
         $subscription = Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
-        $post         = Post::factory()->create(['feed_id' => $feed->id]);
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         EmailDailyIssue::dispatchSync($issue);
@@ -40,15 +40,15 @@ class EmailDailyIssueTest extends TestCase
     {
         Notification::fake();
 
-        $user  = User::factory()->create();
-        $feed  = Feed::factory()->create();
+        $user = User::factory()->create();
+        $feed = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
-        $post  = Post::factory()->create(['feed_id' => $feed->id]);
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
             'edition' => 7,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         EmailDailyIssue::dispatchSync($issue);
@@ -64,14 +64,14 @@ class EmailDailyIssueTest extends TestCase
     {
         Notification::fake();
 
-        $user  = User::factory()->create(['email' => 'reader@example.com']);
-        $feed  = Feed::factory()->create();
+        $user = User::factory()->create(['email' => 'reader@example.com']);
+        $feed = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
-        $post  = Post::factory()->create(['feed_id' => $feed->id]);
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         EmailDailyIssue::dispatchSync($issue);

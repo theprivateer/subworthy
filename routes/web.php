@@ -1,17 +1,16 @@
 <?php
 
-use App\Http\Controllers\FilterController;
-use App\Http\Controllers\ReadLaterController;
-use App\Http\Controllers\User\DeliveryController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\FilterController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\LinkController;
-use App\Http\Controllers\DailyController;
 use App\Http\Controllers\IssueController;
-use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\LinkController;
+use App\Http\Controllers\ReadLaterController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\User\DeliveryController;
 use App\Http\Controllers\User\PasswordController;
+use App\Http\Controllers\User\UserController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +24,7 @@ use App\Http\Controllers\User\PasswordController;
 */
 
 Route::get('/', function () {
-   return redirect()->route('home');
+    return redirect()->route('home');
 });
 
 Route::view('cancelled', 'user.user.cancelled');

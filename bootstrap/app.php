@@ -21,8 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->trustProxies(headers:
-            Request::HEADER_X_FORWARDED_FOR |
+        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR |
             Request::HEADER_X_FORWARDED_HOST |
             Request::HEADER_X_FORWARDED_PORT |
             Request::HEADER_X_FORWARDED_PROTO |
@@ -58,7 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('model:prune')->daily();
 
         $schedule->call(function () {
-            dispatch(new RemoveUnsubscribedFeeds());
+            dispatch(new RemoveUnsubscribedFeeds);
         })->daily();
     })
     ->create();

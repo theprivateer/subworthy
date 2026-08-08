@@ -15,6 +15,7 @@ class ProcessOpmlImport implements ShouldQueue
     use Queueable;
 
     public int $tries = 3;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -27,8 +28,7 @@ class ProcessOpmlImport implements ShouldQueue
         $disk = Storage::disk('local');
 
         try {
-            if( ! $disk->exists($this->path))
-            {
+            if (! $disk->exists($this->path)) {
                 Log::warning('OPML import file was missing before processing', [
                     'user_id' => $this->userId,
                     'path' => $this->path,
@@ -39,8 +39,7 @@ class ProcessOpmlImport implements ShouldQueue
 
             $urls = $this->extractOpmlFeedUrls($disk->get($this->path), $subscribeToFeed);
 
-            foreach($urls as $url)
-            {
+            foreach ($urls as $url) {
                 dispatch(new ImportOpmlFeed($this->userId, $url));
             }
         } catch (\InvalidArgumentException $e) {
@@ -75,13 +74,11 @@ class ProcessOpmlImport implements ShouldQueue
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
 
-        if( ! $opml instanceof SimpleXMLElement)
-        {
+        if (! $opml instanceof SimpleXMLElement) {
             throw new \InvalidArgumentException('The uploaded OPML file could not be parsed.');
         }
 
-        if(strtolower($opml->getName()) !== 'opml')
-        {
+        if (strtolower($opml->getName()) !== 'opml') {
             throw new \InvalidArgumentException('The uploaded file is not an OPML file.');
         }
 
@@ -101,14 +98,11 @@ class ProcessOpmlImport implements ShouldQueue
     {
         $urls = [];
 
-        foreach($element->children() as $child)
-        {
-            if($child->getName() === 'outline')
-            {
+        foreach ($element->children() as $child) {
+            if ($child->getName() === 'outline') {
                 $xmlUrl = trim((string) $child->attributes()['xmlUrl']);
 
-                if($xmlUrl !== '')
-                {
+                if ($xmlUrl !== '') {
                     $urls[] = $subscribeToFeed->normalizeFeedUrl($xmlUrl);
                 }
             }

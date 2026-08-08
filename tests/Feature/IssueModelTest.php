@@ -20,7 +20,7 @@ class IssueModelTest extends TestCase
 
     public function test_load_issue_groups_posts_by_feed_id(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $feed1 = Feed::factory()->create();
         $feed2 = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed1->id]);
@@ -30,7 +30,7 @@ class IssueModelTest extends TestCase
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post1->id, $post2->id]),
+            'posts' => json_encode([$post1->id, $post2->id]),
         ]);
         $issue->loadIssue();
 
@@ -41,17 +41,17 @@ class IssueModelTest extends TestCase
 
     public function test_load_issue_excludes_posts_from_unsubscribed_feeds(): void
     {
-        $user             = User::factory()->create();
-        $subscribedFeed   = Feed::factory()->create();
+        $user = User::factory()->create();
+        $subscribedFeed = Feed::factory()->create();
         $unsubscribedFeed = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $subscribedFeed->id]);
 
-        $activePost   = Post::factory()->create(['feed_id' => $subscribedFeed->id]);
+        $activePost = Post::factory()->create(['feed_id' => $subscribedFeed->id]);
         $inactivePost = Post::factory()->create(['feed_id' => $unsubscribedFeed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$activePost->id, $inactivePost->id]),
+            'posts' => json_encode([$activePost->id, $inactivePost->id]),
         ]);
         $issue->loadIssue();
 
@@ -67,13 +67,13 @@ class IssueModelTest extends TestCase
         Subscription::factory()->create([
             'user_id' => $user->id,
             'feed_id' => $feed->id,
-            'title'   => 'My Override',
+            'title' => 'My Override',
         ]);
         $post = Post::factory()->create(['feed_id' => $feed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
         $issue->loadIssue();
 
@@ -88,13 +88,13 @@ class IssueModelTest extends TestCase
         Subscription::factory()->create([
             'user_id' => $user->id,
             'feed_id' => $feed->id,
-            'title'   => null,
+            'title' => null,
         ]);
         $post = Post::factory()->create(['feed_id' => $feed->id]);
 
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
         $issue->loadIssue();
 
@@ -108,7 +108,7 @@ class IssueModelTest extends TestCase
 
     public function test_prunable_scope_returns_only_issues_older_than_one_month(): void
     {
-        $old    = Issue::factory()->create(['created_at' => now()->subMonths(2)]);
+        $old = Issue::factory()->create(['created_at' => now()->subMonths(2)]);
         $recent = Issue::factory()->create();
 
         $ids = (new Issue)->prunable()->pluck('id');

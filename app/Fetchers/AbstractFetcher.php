@@ -2,7 +2,4 @@
 
 namespace App\Fetchers;
 
-abstract class AbstractFetcher
-{
-
-}
+abstract class AbstractFetcher {}

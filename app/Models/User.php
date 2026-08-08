@@ -44,9 +44,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function casts(): array
     {
         return [
-            'last_delivered_at'  => 'datetime',
+            'last_delivered_at' => 'datetime',
             'last_interaction_at' => 'datetime',
-            'paused'             => 'datetime',
+            'paused' => 'datetime',
         ];
     }
 
@@ -55,13 +55,11 @@ class User extends Authenticatable implements MustVerifyEmail
         parent::boot();
 
         static::saving(function ($model) {
-            if(empty($model->timezone))
-            {
+            if (empty($model->timezone)) {
                 $model->timezone = 'UTC';
             }
 
-            if(empty($model->delivery_time_local))
-            {
+            if (empty($model->delivery_time_local)) {
                 $model->delivery_time_local = '0000';
             }
 
@@ -96,9 +94,8 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasDefaultDeliverySettings(): bool
     {
-        if($this->getAttribute('timezone') === 'UTC' &&
-            $this->getAttribute('delivery_time_local') === '0000')
-        {
+        if ($this->getAttribute('timezone') === 'UTC' &&
+            $this->getAttribute('delivery_time_local') === '0000') {
             return true;
         }
 

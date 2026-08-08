@@ -11,8 +11,7 @@ class UserController extends Controller
 {
     public function show($username = null)
     {
-        if(empty($username))
-        {
+        if (empty($username)) {
             abort(404);
         }
 
@@ -35,14 +34,14 @@ class UserController extends Controller
 
         // Timeslots
         $startTime = strtotime('00:00');
-        $endTime   = strtotime('23:59');
+        $endTime = strtotime('23:59');
         $returnTimeFormat = 'g:i A';
 
-        $current   = time();
-        $addTime   = strtotime('+'. '15 mins', $current);
-        $diff      = $addTime - $current;
+        $current = time();
+        $addTime = strtotime('+'.'15 mins', $current);
+        $diff = $addTime - $current;
 
-        $times = array();
+        $times = [];
         while ($startTime < $endTime) {
             $times[date('Hi', $startTime)] = date($returnTimeFormat, $startTime);
             $startTime += $diff;
@@ -59,14 +58,14 @@ class UserController extends Controller
     public function update(Request $request)
     {
         $this->validate($request, [
-            'email' => ['required', 'email' , 'unique:users,email,' . auth()->id()],
-            'username' => ['nullable', 'string', 'unique:users,username,' . auth()->id()],
+            'email' => ['required', 'email', 'unique:users,email,'.auth()->id()],
+            'username' => ['nullable', 'string', 'unique:users,username,'.auth()->id()],
         ]);
 
         $user = auth()->user();
 
         $user->update($request->only([
-            'email', 'username'
+            'email', 'username',
         ]));
 
         flash('Account updated');

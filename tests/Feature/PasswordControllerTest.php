@@ -16,7 +16,7 @@ class PasswordControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)->post('/user/password', [
-            'password'              => 'newpassword',
+            'password' => 'newpassword',
             'password_confirmation' => 'newpassword',
         ]);
 
@@ -30,7 +30,7 @@ class PasswordControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post('/user/password', [
-                'password'              => 'short',
+                'password' => 'short',
                 'password_confirmation' => 'short',
             ])
             ->assertSessionHasErrors('password');
@@ -42,7 +42,7 @@ class PasswordControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post('/user/password', [
-                'password'              => 'newpassword',
+                'password' => 'newpassword',
                 'password_confirmation' => 'different',
             ])
             ->assertSessionHasErrors('password');

@@ -3,10 +3,10 @@
 namespace App\View\Components;
 
 use Illuminate\View\Component;
+use Illuminate\View\View;
 
 class AppLayout extends Component
 {
-
     public $back;
 
     public function __construct($back = null)
@@ -17,7 +17,7 @@ class AppLayout extends Component
     /**
      * Get the view / contents that represents the component.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function render()
     {

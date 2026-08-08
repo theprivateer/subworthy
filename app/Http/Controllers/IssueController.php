@@ -14,16 +14,15 @@ class IssueController extends Controller
 
         $authUser = null;
 
-        if(auth()->check())
-        {
+        if (auth()->check()) {
             auth()->user()->load('readLaters');
             $authUser = auth()->user();
         }
 
         return view('issue.show', [
-            'issue'     => $issue,
-            'posts'     => $issue->issue_posts,
-            'user'      => $issue->user,
+            'issue' => $issue,
+            'posts' => $issue->issue_posts,
+            'user' => $issue->user,
             'authUser' => $authUser,
         ]);
     }

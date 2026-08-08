@@ -20,10 +20,10 @@ class SubscriptionModelTest extends TestCase
 
     public function test_feed_title_falls_back_to_feed_title_when_no_custom_title(): void
     {
-        $feed         = Feed::factory()->create(['title' => 'Feed Name']);
+        $feed = Feed::factory()->create(['title' => 'Feed Name']);
         $subscription = Subscription::factory()->create([
             'feed_id' => $feed->id,
-            'title'   => null,
+            'title' => null,
         ]);
 
         $this->assertEquals('Feed Name', $subscription->feed_title);
@@ -31,10 +31,10 @@ class SubscriptionModelTest extends TestCase
 
     public function test_custom_title_takes_precedence_over_feed_title(): void
     {
-        $feed         = Feed::factory()->create(['title' => 'Feed Name']);
+        $feed = Feed::factory()->create(['title' => 'Feed Name']);
         $subscription = Subscription::factory()->create([
             'feed_id' => $feed->id,
-            'title'   => 'Override',
+            'title' => 'Override',
         ]);
 
         $this->assertEquals('Override', $subscription->feed_title);

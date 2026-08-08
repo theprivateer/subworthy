@@ -32,7 +32,7 @@ class Feed extends Model
             // Prefer the homepage when available so relative image paths resolve correctly.
             $uri = Uri::createFromString($model->link ?? $model->url);
 
-            $model->tld = $uri->getScheme() . '://' . $uri->getHost();
+            $model->tld = $uri->getScheme().'://'.$uri->getHost();
         });
     }
 
@@ -43,15 +43,13 @@ class Feed extends Model
 
     public function getWebsiteAttribute()
     {
-        if(empty($this->getAttribute('link')))
-        {
+        if (empty($this->getAttribute('link'))) {
             return $this->getAttribute('tld');
         }
 
         // BUG: this compares link to itself so it is always true, meaning tld is always
         // returned and the link attribute is never used as the website URL.
-        if(strtolower($this->getAttribute('link')) == strtolower($this->getAttribute('link')))
-        {
+        if (strtolower($this->getAttribute('link')) == strtolower($this->getAttribute('link'))) {
             return $this->getAttribute('tld');
         }
 

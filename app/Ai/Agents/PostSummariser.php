@@ -29,7 +29,7 @@ class PostSummariser implements Agent, HasStructuredOutput
     {
         return [
             'summary' => $schema->string()->required(),
-            'themes'  => $schema->array()
+            'themes' => $schema->array()
                 ->items($schema->string())
                 ->required(),
         ];

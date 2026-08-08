@@ -16,13 +16,13 @@ class IssueControllerTest extends TestCase
 
     private function issueWithPost(): array
     {
-        $owner        = User::factory()->create();
-        $feed         = Feed::factory()->create();
+        $owner = User::factory()->create();
+        $feed = Feed::factory()->create();
         Subscription::factory()->create(['user_id' => $owner->id, 'feed_id' => $feed->id]);
-        $post         = Post::factory()->create(['feed_id' => $feed->id]);
-        $issue        = Issue::factory()->create([
+        $post = Post::factory()->create(['feed_id' => $feed->id]);
+        $issue = Issue::factory()->create([
             'user_id' => $owner->id,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
 
         return [$owner, $issue, $post];
@@ -77,7 +77,7 @@ class IssueControllerTest extends TestCase
     public function test_show_sets_auth_user_to_viewer_not_owner_when_viewing_another_users_issue(): void
     {
         [$owner, $issue] = $this->issueWithPost();
-        $viewer          = User::factory()->create();
+        $viewer = User::factory()->create();
 
         $this->actingAs($viewer)
             ->get("/issue/{$issue->id}")

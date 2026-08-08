@@ -34,7 +34,7 @@ class RemoveUnsubscribedFeedsTest extends TestCase
 
     public function test_only_unsubscribed_feeds_are_deleted(): void
     {
-        $subscribedFeed   = Feed::factory()->create();
+        $subscribedFeed = Feed::factory()->create();
         $unsubscribedFeed = Feed::factory()->create();
 
         Subscription::factory()->create(['feed_id' => $subscribedFeed->id]);
@@ -47,7 +47,7 @@ class RemoveUnsubscribedFeedsTest extends TestCase
 
     public function test_feed_with_subscription_from_multiple_users_is_retained(): void
     {
-        $feed  = Feed::factory()->create();
+        $feed = Feed::factory()->create();
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
 

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class UserControllerTest extends TestCase
@@ -56,7 +55,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create(['email' => 'old@example.com']);
 
         $this->actingAs($user)->post('/user', [
-            'email'    => 'new@example.com',
+            'email' => 'new@example.com',
             'username' => $user->username,
         ]);
 
@@ -68,7 +67,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create(['username' => 'oldname']);
 
         $this->actingAs($user)->post('/user', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'username' => 'newname',
         ]);
 
@@ -78,7 +77,7 @@ class UserControllerTest extends TestCase
     public function test_update_rejects_duplicate_email_address(): void
     {
         $existing = User::factory()->create(['email' => 'taken@example.com']);
-        $user     = User::factory()->create();
+        $user = User::factory()->create();
 
         $this->actingAs($user)
             ->post('/user', ['email' => 'taken@example.com', 'username' => $user->username])

@@ -22,7 +22,7 @@ class ProcessOpmlImportTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->create();
-        Storage::disk('local')->put('opml-imports/test.opml', <<<XML
+        Storage::disk('local')->put('opml-imports/test.opml', <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <opml version="2.0">
               <body>
@@ -36,7 +36,7 @@ class ProcessOpmlImportTest extends TestCase
             </opml>
             XML);
 
-        (new ProcessOpmlImport($user->id, 'opml-imports/test.opml'))->handle(new SubscribeToFeed());
+        (new ProcessOpmlImport($user->id, 'opml-imports/test.opml'))->handle(new SubscribeToFeed);
 
         Queue::assertPushed(ImportOpmlFeed::class, 2);
         Queue::assertPushed(ImportOpmlFeed::class, fn (ImportOpmlFeed $job) => $job->userId === $user->id && $job->url === 'https://example.com/nested.xml');
@@ -53,7 +53,7 @@ class ProcessOpmlImportTest extends TestCase
         $user = User::factory()->create();
         Storage::disk('local')->put('opml-imports/invalid.opml', '<opml><body>');
 
-        (new ProcessOpmlImport($user->id, 'opml-imports/invalid.opml'))->handle(new SubscribeToFeed());
+        (new ProcessOpmlImport($user->id, 'opml-imports/invalid.opml'))->handle(new SubscribeToFeed);
 
         Queue::assertNotPushed(ImportOpmlFeed::class);
         Storage::disk('local')->assertMissing('opml-imports/invalid.opml');
@@ -67,12 +67,12 @@ class ProcessOpmlImportTest extends TestCase
         Log::spy();
 
         $user = User::factory()->create();
-        Storage::disk('local')->put('opml-imports/rss.xml', <<<XML
+        Storage::disk('local')->put('opml-imports/rss.xml', <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0"></rss>
             XML);
 
-        (new ProcessOpmlImport($user->id, 'opml-imports/rss.xml'))->handle(new SubscribeToFeed());
+        (new ProcessOpmlImport($user->id, 'opml-imports/rss.xml'))->handle(new SubscribeToFeed);
 
         Queue::assertNotPushed(ImportOpmlFeed::class);
         Storage::disk('local')->assertMissing('opml-imports/rss.xml');

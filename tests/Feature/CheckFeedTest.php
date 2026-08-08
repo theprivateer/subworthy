@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Ai\Agents\PostSummariser;
+use App\Fetchers\ProducthuntFetcher;
 use App\Jobs\CheckFeed;
 use App\Jobs\FetchFullPost;
 use App\Jobs\SummarisePost;
@@ -43,7 +44,7 @@ class CheckFeedTest extends TestCase
 
     private function bindMockResponse(string $xml): void
     {
-        $mock  = new MockHandler([new Response(200, ['Content-Type' => 'application/rss+xml'], $xml)]);
+        $mock = new MockHandler([new Response(200, ['Content-Type' => 'application/rss+xml'], $xml)]);
         $stack = HandlerStack::create($mock);
 
         $this->app->bind(GuzzleClientInterface::class, fn () => new Client(['handler' => $stack]));
@@ -52,7 +53,7 @@ class CheckFeedTest extends TestCase
     private function bind500Response(): void
     {
         // http_errors middleware is enabled by default — a 500 response becomes a ServerException.
-        $mock  = new MockHandler([new Response(500)]);
+        $mock = new MockHandler([new Response(500)]);
         $stack = HandlerStack::create($mock);
 
         $this->app->bind(GuzzleClientInterface::class, fn () => new Client(['handler' => $stack]));
@@ -77,13 +78,13 @@ class CheckFeedTest extends TestCase
 
     private function feedItem(array $data): string
     {
-        $guid        = $data['guid'] ?? 'test-guid-' . uniqid();
-        $title       = $data['title'] ?? 'Test Post';
-        $link        = $data['link'] ?? 'https://example.com/post';
+        $guid = $data['guid'] ?? 'test-guid-'.uniqid();
+        $title = $data['title'] ?? 'Test Post';
+        $link = $data['link'] ?? 'https://example.com/post';
         $description = $data['description'] ?? 'Preview text';
-        $content     = $data['content'] ?? '<p>Full post content</p>';
-        $pubDate     = $data['pubDate'] ?? now()->subDay()->toRfc2822String();
-        $enclosure   = isset($data['enclosure']) ? "<enclosure url=\"{$data['enclosure']['url']}\" type=\"{$data['enclosure']['type']}\" length=\"1234\"/>" : '';
+        $content = $data['content'] ?? '<p>Full post content</p>';
+        $pubDate = $data['pubDate'] ?? now()->subDay()->toRfc2822String();
+        $enclosure = isset($data['enclosure']) ? "<enclosure url=\"{$data['enclosure']['url']}\" type=\"{$data['enclosure']['type']}\" length=\"1234\"/>" : '';
 
         return <<<XML
             <item>
@@ -108,24 +109,24 @@ class CheckFeedTest extends TestCase
 
         $this->bindMockResponse($this->feedXml([
             [
-                'guid'        => 'unique-guid-1',
-                'title'       => 'My Post Title',
-                'link'        => 'https://example.com/my-post',
+                'guid' => 'unique-guid-1',
+                'title' => 'My Post Title',
+                'link' => 'https://example.com/my-post',
                 'description' => 'Post preview',
-                'content'     => '<p>Post body</p>',
-                'pubDate'     => now()->subHour()->toRfc2822String(),
+                'content' => '<p>Post body</p>',
+                'pubDate' => now()->subHour()->toRfc2822String(),
             ],
         ]));
 
         CheckFeed::dispatchSync($feed);
 
         $this->assertDatabaseHas('posts', [
-            'feed_id'   => $feed->id,
+            'feed_id' => $feed->id,
             'source_id' => 'unique-guid-1',
-            'url'       => 'https://example.com/my-post',
-            'title'     => 'My Post Title',
-            'preview'   => 'Post preview',
-            'raw'       => '<p>Post body</p>',
+            'url' => 'https://example.com/my-post',
+            'title' => 'My Post Title',
+            'preview' => 'Post preview',
+            'raw' => '<p>Post body</p>',
         ]);
     }
 
@@ -134,7 +135,7 @@ class CheckFeedTest extends TestCase
         $feed = Feed::factory()->create();
 
         ArchivedPost::factory()->create([
-            'feed_id'   => $feed->id,
+            'feed_id' => $feed->id,
             'source_id' => 'archived-guid',
         ]);
 
@@ -165,7 +166,7 @@ class CheckFeedTest extends TestCase
         $feed = Feed::factory()->create();
 
         Post::factory()->create([
-            'feed_id'   => $feed->id,
+            'feed_id' => $feed->id,
             'source_id' => 'existing-guid',
         ]);
 
@@ -183,9 +184,9 @@ class CheckFeedTest extends TestCase
         $feed = Feed::factory()->create();
 
         Post::factory()->create([
-            'feed_id'   => $feed->id,
+            'feed_id' => $feed->id,
             'source_id' => 'refresh-guid',
-            'title'     => 'Old Title',
+            'title' => 'Old Title',
         ]);
 
         $this->bindMockResponse($this->feedXml([
@@ -258,7 +259,7 @@ class CheckFeedTest extends TestCase
     {
         Queue::fake([FetchFullPost::class]);
 
-        $feed = Feed::factory()->create(['fetcher' => \App\Fetchers\ProducthuntFetcher::class]);
+        $feed = Feed::factory()->create(['fetcher' => ProducthuntFetcher::class]);
 
         $this->bindMockResponse($this->feedXml([
             ['guid' => 'fetcher-guid', 'pubDate' => now()->subHour()->toRfc2822String()],
@@ -303,7 +304,7 @@ class CheckFeedTest extends TestCase
     {
         Queue::fake([FetchFullPost::class, SummarisePost::class]);
 
-        $feed = Feed::factory()->create(['fetcher' => \App\Fetchers\ProducthuntFetcher::class]);
+        $feed = Feed::factory()->create(['fetcher' => ProducthuntFetcher::class]);
 
         $this->bindMockResponse($this->feedXml([
             ['guid' => 'fetcher-summarise-guid', 'pubDate' => now()->subHour()->toRfc2822String()],
@@ -312,6 +313,51 @@ class CheckFeedTest extends TestCase
         CheckFeed::dispatchSync($feed);
 
         Queue::assertNotPushed(SummarisePost::class);
+    }
+
+    public function test_refresh_does_not_resummarise_a_post_that_already_has_one(): void
+    {
+        Queue::fake([SummarisePost::class]);
+
+        $feed = Feed::factory()->create(['fetcher' => null]);
+
+        Post::factory()->create([
+            'feed_id' => $feed->id,
+            'source_id' => 'already-summarised',
+            'summary' => 'Existing summary.',
+            'themes' => ['technology'],
+        ]);
+
+        $this->bindMockResponse($this->feedXml([
+            ['guid' => 'already-summarised', 'title' => 'Updated Title', 'pubDate' => now()->subHour()->toRfc2822String()],
+        ]));
+
+        CheckFeed::dispatchSync($feed, false, true);
+
+        // Refreshing re-imports the same RSS content, so paying to summarise it again is waste
+        Queue::assertNotPushed(SummarisePost::class);
+    }
+
+    public function test_refresh_summarises_a_post_a_previous_run_left_unsummarised(): void
+    {
+        Queue::fake([SummarisePost::class]);
+
+        $feed = Feed::factory()->create(['fetcher' => null]);
+
+        Post::factory()->create([
+            'feed_id' => $feed->id,
+            'source_id' => 'never-summarised',
+            'summary' => null,
+            'themes' => null,
+        ]);
+
+        $this->bindMockResponse($this->feedXml([
+            ['guid' => 'never-summarised', 'title' => 'Updated Title', 'pubDate' => now()->subHour()->toRfc2822String()],
+        ]));
+
+        CheckFeed::dispatchSync($feed, false, true);
+
+        Queue::assertPushed(SummarisePost::class);
     }
 
     // -------------------------------------------------------------------------
@@ -324,8 +370,8 @@ class CheckFeedTest extends TestCase
 
         $this->bindMockResponse($this->feedXml([
             [
-                'guid'      => 'audio-guid',
-                'pubDate'   => now()->subHour()->toRfc2822String(),
+                'guid' => 'audio-guid',
+                'pubDate' => now()->subHour()->toRfc2822String(),
                 'enclosure' => ['url' => 'https://example.com/episode.mp3', 'type' => 'audio/mpeg'],
             ],
         ]));
@@ -344,8 +390,8 @@ class CheckFeedTest extends TestCase
 
         $this->bindMockResponse($this->feedXml([
             [
-                'guid'      => 'video-guid',
-                'pubDate'   => now()->subHour()->toRfc2822String(),
+                'guid' => 'video-guid',
+                'pubDate' => now()->subHour()->toRfc2822String(),
                 'enclosure' => ['url' => 'https://example.com/video.mp4', 'type' => 'video/mp4'],
             ],
         ]));

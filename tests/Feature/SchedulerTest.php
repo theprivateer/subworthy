@@ -69,7 +69,7 @@ class SchedulerTest extends TestCase
     {
         Queue::fake();
 
-        $matchingFeed    = Feed::factory()->create(['next_check_at' => '0930']);
+        $matchingFeed = Feed::factory()->create(['next_check_at' => '0930']);
         $nonMatchingFeed = Feed::factory()->create(['next_check_at' => '1000']);
 
         $this->artisan('schedule:run');
@@ -89,10 +89,10 @@ class SchedulerTest extends TestCase
 
         // UTC timezone, '0930' local → delivery_time '0930'. Days include Monday (1).
         User::factory()->create([
-            'timezone'            => 'UTC',
+            'timezone' => 'UTC',
             'delivery_time_local' => '0930',
-            'days_of_week'        => '1234567',
-            'paused'              => null,
+            'days_of_week' => '1234567',
+            'paused' => null,
         ]);
 
         $this->artisan('schedule:run');
@@ -105,10 +105,10 @@ class SchedulerTest extends TestCase
         Queue::fake();
 
         User::factory()->create([
-            'timezone'            => 'UTC',
+            'timezone' => 'UTC',
             'delivery_time_local' => '1000',
-            'days_of_week'        => '1234567',
-            'paused'              => null,
+            'days_of_week' => '1234567',
+            'paused' => null,
         ]);
 
         $this->artisan('schedule:run');
@@ -122,10 +122,10 @@ class SchedulerTest extends TestCase
 
         // '234567' excludes Monday (1).
         User::factory()->create([
-            'timezone'            => 'UTC',
+            'timezone' => 'UTC',
             'delivery_time_local' => '0930',
-            'days_of_week'        => '234567',
-            'paused'              => null,
+            'days_of_week' => '234567',
+            'paused' => null,
         ]);
 
         $this->artisan('schedule:run');
@@ -138,10 +138,10 @@ class SchedulerTest extends TestCase
         Queue::fake();
 
         User::factory()->create([
-            'timezone'            => 'UTC',
+            'timezone' => 'UTC',
             'delivery_time_local' => '0930',
-            'days_of_week'        => '1234567',
-            'paused'              => now(),
+            'days_of_week' => '1234567',
+            'paused' => now(),
         ]);
 
         $this->artisan('schedule:run');
@@ -154,18 +154,18 @@ class SchedulerTest extends TestCase
         Queue::fake();
 
         User::factory()->create([
-            'timezone'            => 'UTC',
+            'timezone' => 'UTC',
             'delivery_time_local' => '0930',
-            'days_of_week'        => '1234567',
-            'paused'              => null,
+            'days_of_week' => '1234567',
+            'paused' => null,
         ]);
 
         // Wrong time — should be skipped.
         User::factory()->create([
-            'timezone'            => 'UTC',
+            'timezone' => 'UTC',
             'delivery_time_local' => '1000',
-            'days_of_week'        => '1234567',
-            'paused'              => null,
+            'days_of_week' => '1234567',
+            'paused' => null,
         ]);
 
         $this->artisan('schedule:run');
@@ -182,6 +182,7 @@ class SchedulerTest extends TestCase
         // The feed property is protected — access via reflection.
         $ref = new \ReflectionProperty($job, 'feed');
         $ref->setAccessible(true);
+
         return $ref->getValue($job)->id;
     }
 }

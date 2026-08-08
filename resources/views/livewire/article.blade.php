@@ -111,7 +111,14 @@
             </div>
 
             <div class="col-md-7">
-                {!! $post->summary ?? $post->preview !!}
+                {{-- The summary is model-generated prose built from third-party feed content, so it is
+                     escaped. Only the preview is safe to render as HTML — it goes through the feed's
+                     formatter (HTMLPurifier) in Post::getPreviewAttribute(). --}}
+                @if(filled($post->summary))
+                    <p>{{ $post->summary }}</p>
+                @else
+                    {!! $post->preview !!}
+                @endif
 
                 <p>
                     <a href="#post_{{ $post->id }}" class="fw-bold text-dark text-decoration-none" wire:click.prevent="showFull">

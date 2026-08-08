@@ -20,7 +20,7 @@ class PostModelTest extends TestCase
     public function test_body_uses_fetched_raw_when_present(): void
     {
         $post = Post::factory()->create([
-            'raw'         => '<p>raw content</p>',
+            'raw' => '<p>raw content</p>',
             'fetched_raw' => '<p>fetched content</p>',
         ]);
 
@@ -31,7 +31,7 @@ class PostModelTest extends TestCase
     public function test_body_falls_back_to_raw_when_fetched_raw_is_null(): void
     {
         $post = Post::factory()->create([
-            'raw'         => '<p>raw content</p>',
+            'raw' => '<p>raw content</p>',
             'fetched_raw' => null,
         ]);
 
@@ -46,7 +46,7 @@ class PostModelTest extends TestCase
     {
         $post = Post::factory()->create([
             'preview' => 'the preview text',
-            'raw'     => '<p>completely different raw content</p>',
+            'raw' => '<p>completely different raw content</p>',
         ]);
 
         $this->assertStringContainsString('the preview text', $post->preview);
@@ -54,11 +54,11 @@ class PostModelTest extends TestCase
 
     public function test_preview_truncates_body_to_50_words_when_preview_equals_raw(): void
     {
-        $raw = '<p>' . implode(' ', array_map(fn ($i) => "word$i", range(1, 100))) . '</p>';
+        $raw = '<p>'.implode(' ', array_map(fn ($i) => "word$i", range(1, 100))).'</p>';
 
         $post = Post::factory()->create([
-            'preview'     => $raw,
-            'raw'         => $raw,
+            'preview' => $raw,
+            'raw' => $raw,
             'fetched_raw' => null,
         ]);
 
@@ -72,8 +72,8 @@ class PostModelTest extends TestCase
     public function test_preview_generates_from_body_when_preview_is_null(): void
     {
         $post = Post::factory()->create([
-            'preview'     => null,
-            'raw'         => '<p>body content goes here</p>',
+            'preview' => null,
+            'raw' => '<p>body content goes here</p>',
             'fetched_raw' => null,
         ]);
 
@@ -86,7 +86,7 @@ class PostModelTest extends TestCase
 
     public function test_prunable_scope_returns_only_posts_older_than_one_month(): void
     {
-        $old    = Post::factory()->create(['created_at' => now()->subMonths(2)]);
+        $old = Post::factory()->create(['created_at' => now()->subMonths(2)]);
         $recent = Post::factory()->create();
 
         $ids = (new Post)->prunable()->pluck('id');
@@ -97,14 +97,14 @@ class PostModelTest extends TestCase
 
     public function test_pruning_creates_an_archived_post_and_deletes_the_post(): void
     {
-        $post     = Post::factory()->create(['created_at' => now()->subMonths(2)]);
-        $feedId   = $post->feed_id;
+        $post = Post::factory()->create(['created_at' => now()->subMonths(2)]);
+        $feedId = $post->feed_id;
         $sourceId = $post->source_id;
 
         Artisan::call('model:prune', ['--model' => 'App\Models\Post']);
 
         $this->assertDatabaseHas('archived_posts', [
-            'feed_id'   => $feedId,
+            'feed_id' => $feedId,
             'source_id' => $sourceId,
         ]);
         $this->assertDatabaseMissing('posts', ['id' => $post->id]);
@@ -122,9 +122,9 @@ class PostModelTest extends TestCase
 
     public function test_archived_posts_are_not_pruned(): void
     {
-        $feed   = Feed::factory()->create();
+        $feed = Feed::factory()->create();
         $record = ArchivedPost::factory()->create([
-            'feed_id'    => $feed->id,
+            'feed_id' => $feed->id,
             'created_at' => now()->subMonths(2),
         ]);
 

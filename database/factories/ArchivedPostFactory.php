@@ -14,7 +14,7 @@ class ArchivedPostFactory extends Factory
     public function definition(): array
     {
         return [
-            'feed_id'   => Feed::factory(),
+            'feed_id' => Feed::factory(),
             'source_id' => fake()->unique()->uuid(),
         ];
     }

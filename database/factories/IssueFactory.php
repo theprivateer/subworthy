@@ -14,10 +14,10 @@ class IssueFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'        => User::factory(),
-            'edition'        => 1,
-            'issue_date'     => fake()->dateTimeBetween('-1 month', 'now'),
-            'posts'          => json_encode([]),
+            'user_id' => User::factory(),
+            'edition' => 1,
+            'issue_date' => fake()->dateTimeBetween('-1 month', 'now'),
+            'posts' => json_encode([]),
             'posts_excluded' => json_encode([]),
         ];
     }

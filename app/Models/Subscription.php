@@ -34,8 +34,7 @@ class Subscription extends Model
 
     public function getFeedTitleAttribute()
     {
-        if( ! empty($this->getAttribute('title')))
-        {
+        if (! empty($this->getAttribute('title'))) {
             return $this->getAttribute('title');
         }
 

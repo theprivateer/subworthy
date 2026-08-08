@@ -11,9 +11,9 @@ class FilterController extends Controller
     public function store(Request $request, Subscription $subscription)
     {
         $this->validate($request, [
-           'field' => 'required',
-           'operator' => 'required',
-           'pattern' => 'required',
+            'field' => 'required',
+            'operator' => 'required',
+            'pattern' => 'required',
         ]);
 
         $filter = new Filter($request->only(['field', 'operator', 'pattern']));
@@ -28,15 +28,15 @@ class FilterController extends Controller
     public function update(Request $request, Filter $filter)
     {
         $validated = $request->validate([
-            'field_' . $filter->id => 'required',
-            'operator_' . $filter->id => 'required',
-            'pattern_' . $filter->id => 'required',
+            'field_'.$filter->id => 'required',
+            'operator_'.$filter->id => 'required',
+            'pattern_'.$filter->id => 'required',
         ]);
 
         $filter->update([
-           'field' => $validated['field_' . $filter->id],
-           'operator' => $validated['operator_' . $filter->id],
-           'pattern' => $validated['pattern_' . $filter->id],
+            'field' => $validated['field_'.$filter->id],
+            'operator' => $validated['operator_'.$filter->id],
+            'pattern' => $validated['pattern_'.$filter->id],
         ]);
 
         flash('Filter updated');

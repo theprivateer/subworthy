@@ -41,10 +41,10 @@ class Issue extends Model
 
         // Order posts chronologically
         $posts = Post::with('feed')
-                    ->whereIn('id', json_decode($this->getAttribute('posts')))
-                    ->whereIn('feed_id', $active_subscriptions)
-                    ->orderBy('published_at')
-                    ->get();
+            ->whereIn('id', json_decode($this->getAttribute('posts')))
+            ->whereIn('feed_id', $active_subscriptions)
+            ->orderBy('published_at')
+            ->get();
 
         // TODO: Order feeds in a uniform way
         $posts = $posts->groupBy('feed_id');

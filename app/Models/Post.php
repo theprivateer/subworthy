@@ -58,8 +58,7 @@ class Post extends Model
 
     public function getPreviewAttribute($preview): string
     {
-        if(empty($preview))
-        {
+        if (empty($preview)) {
             $body = $this->getBodyAttribute();
 
             return Str::words(strip_tags($body), 50);
@@ -67,8 +66,7 @@ class Post extends Model
 
         // Some feeds set the description element to the same value as the full content.
         // In that case, truncate the body rather than rendering a full-length "preview".
-        if($preview == $this->getAttribute('raw'))
-        {
+        if ($preview == $this->getAttribute('raw')) {
             $body = $this->getBodyAttribute();
 
             return Str::words(strip_tags($body), 50);
@@ -79,12 +77,12 @@ class Post extends Model
 
     private function getFormatter(): FormatterContract
     {
-        if(is_null($this->feed->formatter))
-        {
+        if (is_null($this->feed->formatter)) {
             return new DefaultFormatter($this->feed);
         }
 
         $class = $this->feed->formatter;
+
         return new $class($this->feed);
     }
 
@@ -101,8 +99,8 @@ class Post extends Model
     protected function pruning()
     {
         ArchivedPost::create([
-           'feed_id' => $this->getAttribute('feed_id'),
-           'source_id' => $this->getAttribute('source_id'),
+            'feed_id' => $this->getAttribute('feed_id'),
+            'source_id' => $this->getAttribute('source_id'),
         ]);
     }
 }

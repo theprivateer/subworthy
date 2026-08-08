@@ -3,28 +3,29 @@
 namespace App\Jobs;
 
 use App\Fetchers\FetcherContract;
-use App\Jobs\SummarisePost;
 use App\Models\Post;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class FetchFullPost implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 120;
 
     /**
-     * @var \App\Models\Post
+     * @var Post
      */
     private $post;
+
     /**
-     * @var \App\Fetchers\FetcherContract
+     * @var FetcherContract
      */
     private $fetcher;
 
@@ -48,14 +49,17 @@ class FetchFullPost implements ShouldQueue
     {
         $result = $this->fetcher->fetch($this->post);
 
-        SummarisePost::dispatch($this->post->fresh());
+        // Dispatched by id, not by model: the fetcher writes fetched_raw directly, so the
+        // instance held here is already stale. SummarisePost re-reads the row when it runs
+        // and picks up the enriched content.
+        SummarisePost::dispatch($this->post->id);
 
         return $result;
     }
 
     public function failed(?\Throwable $exception): void
     {
-        \Illuminate\Support\Facades\Log::error('FetchFullPost failed', [
+        Log::error('FetchFullPost failed', [
             'post_id' => $this->post->id,
             'error' => $exception?->getMessage(),
         ]);

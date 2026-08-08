@@ -3,18 +3,18 @@
 namespace App\Jobs;
 
 use App\Filters\PostFilterService;
-use App\Models\Subscription;
-use Carbon\Carbon;
-use App\Models\Post;
-use App\Models\User;
 use App\Models\Issue;
+use App\Models\Post;
+use App\Models\Subscription;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CreateDailyIssue implements ShouldQueue
 {
@@ -39,8 +39,8 @@ class CreateDailyIssue implements ShouldQueue
     {
         // Get a list of all feeds that belong to this daily
         $subscriptions = Subscription::with('filters')
-                                    ->where('user_id', $this->user->id)
-                                    ->get();
+            ->where('user_id', $this->user->id)
+            ->get();
 
         // For users who have never received an issue, look back 2 days so their first
         // delivery isn't empty. After that, last_delivered_at is always set (see below).
@@ -49,8 +49,7 @@ class CreateDailyIssue implements ShouldQueue
         $posts_filtered = [];
         $posts_excluded = [];
 
-        foreach($subscriptions as $subscription)
-        {
+        foreach ($subscriptions as $subscription) {
             $posts = Post::where('feed_id', $subscription->feed_id)
                 ->where('created_at', '>=', $since)
                 ->get();
@@ -58,10 +57,8 @@ class CreateDailyIssue implements ShouldQueue
             // PostFilterService::filter() returns true when a post should be EXCLUDED.
             // $posts_filtered = posts that survived all filters (included in the issue).
             // $posts_excluded = posts that matched a filter rule (omitted from the issue).
-            foreach($posts as $post)
-            {
-                if(PostFilterService::filter($post, $subscription->filters))
-                {
+            foreach ($posts as $post) {
+                if (PostFilterService::filter($post, $subscription->filters)) {
                     $posts_excluded[] = $post->id;
                 } else {
                     $posts_filtered[] = $post->id;
@@ -69,9 +66,7 @@ class CreateDailyIssue implements ShouldQueue
             }
         }
 
-
-        if(count($posts_filtered))
-        {
+        if (count($posts_filtered)) {
             $previousEdition = DB::table('issues')->where('user_id', $this->user->id)->max('edition');
 
             $issue = Issue::create([
@@ -83,7 +78,7 @@ class CreateDailyIssue implements ShouldQueue
             ]);
 
             // Now we can send the email
-            dispatch( new EmailDailyIssue($issue));
+            dispatch(new EmailDailyIssue($issue));
         }
 
         // Always advance last_delivered_at even when no issue was created, so the
@@ -94,7 +89,7 @@ class CreateDailyIssue implements ShouldQueue
 
     public function failed(?\Throwable $exception): void
     {
-        \Illuminate\Support\Facades\Log::error('CreateDailyIssue failed', [
+        Log::error('CreateDailyIssue failed', [
             'user_id' => $this->user->id,
             'error' => $exception?->getMessage(),
         ]);

@@ -14,12 +14,11 @@ class SubscribeToFeed
         $url = $this->normalizeFeedUrl($url);
         $uri = Uri::createFromString($url);
         $scheme = $uri->getScheme();
-        $protocolLessUrl = str_replace($scheme . '://', '', $url);
+        $protocolLessUrl = str_replace($scheme.'://', '', $url);
 
         $feed = Feed::where('protocol_less_url', $protocolLessUrl)->first();
 
-        if( ! $feed)
-        {
+        if (! $feed) {
             $feed = Feed::create([
                 'url' => $url,
                 'protocol_less_url' => $protocolLessUrl,
@@ -31,15 +30,12 @@ class SubscribeToFeed
             'feed_id' => $feed->id,
         ]);
 
-        if($feed->wasRecentlyCreated === true)
-        {
+        if ($feed->wasRecentlyCreated === true) {
             // OPML entry jobs can run the first check inline so users do not briefly see
             // blank feed titles while another queued CheckFeed waits behind the import.
-            if($checkFeedImmediately)
-            {
+            if ($checkFeedImmediately) {
                 (new CheckFeed($feed, true))->handle();
-            } else
-            {
+            } else {
                 dispatch(new CheckFeed($feed, true));
             }
         }

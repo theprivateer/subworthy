@@ -22,7 +22,8 @@ class BackfillPostSummaries extends Command
     {
         $defaultProvider = config('ai.default');
         if (blank(config("ai.providers.{$defaultProvider}.key"))) {
-            error('No AI provider API key is configured. Set ' . strtoupper($defaultProvider) . '_API_KEY in your .env file.');
+            error('No AI provider API key is configured. Set '.strtoupper($defaultProvider).'_API_KEY in your .env file.');
+
             return self::FAILURE;
         }
 
@@ -54,10 +55,13 @@ class BackfillPostSummaries extends Command
 
         $limit = filled($limitInput) ? (int) $limitInput : null;
 
+        // Deliberately unordered: chunkById pages with `where id > lastId` and orders by id, so
+        // adding an orderBy on any other column makes the last row of a page not the highest id
+        // in that page — which silently skips posts and re-dispatches others. Ordering by id
+        // ascending (chunkById's default) still yields oldest-imported-first.
         $query = Post::query()
             ->unless($this->option('force'), fn ($q) => $q->where(fn ($q) => $q->whereNull('summary')->orWhereNull('themes')))
-            ->when($feedId !== 'all', fn ($q) => $q->where('feed_id', $feedId))
-            ->oldest('published_at');
+            ->when($feedId !== 'all', fn ($q) => $q->where('feed_id', $feedId));
 
         if ($limit) {
             $query->limit($limit);
@@ -72,15 +76,16 @@ class BackfillPostSummaries extends Command
 
                 if (blank($content)) {
                     $skipped++;
+
                     continue;
                 }
 
-                SummarisePost::dispatch($post);
+                SummarisePost::dispatch($post->id);
                 $dispatched++;
             }
         });
 
-        info("Dispatched {$dispatched} " . str('job')->plural($dispatched) . " to generate summaries and themes, skipped {$skipped} " . str('post')->plural($skipped) . " with no content.");
+        info("Dispatched {$dispatched} ".str('job')->plural($dispatched)." to generate summaries and themes, skipped {$skipped} ".str('post')->plural($skipped).' with no content.');
 
         return self::SUCCESS;
     }

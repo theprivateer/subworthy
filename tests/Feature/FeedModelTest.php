@@ -18,7 +18,7 @@ class FeedModelTest extends TestCase
     {
         $feed = Feed::factory()->create([
             'link' => 'https://blog.example.com/welcome',
-            'url'  => 'https://feeds.other.com/rss',
+            'url' => 'https://feeds.other.com/rss',
         ]);
 
         $this->assertEquals('https://blog.example.com', $feed->tld);
@@ -28,7 +28,7 @@ class FeedModelTest extends TestCase
     {
         $feed = Feed::factory()->create([
             'link' => null,
-            'url'  => 'https://feeds.example.com/rss',
+            'url' => 'https://feeds.example.com/rss',
         ]);
 
         $this->assertEquals('https://feeds.example.com', $feed->tld);
@@ -38,7 +38,7 @@ class FeedModelTest extends TestCase
     {
         $feed = Feed::factory()->create([
             'link' => 'https://original.com/page',
-            'url'  => 'https://original.com/feed',
+            'url' => 'https://original.com/feed',
         ]);
 
         $feed->update(['link' => 'https://updated.com/page']);
@@ -50,7 +50,7 @@ class FeedModelTest extends TestCase
     {
         $feed = Feed::factory()->create([
             'link' => null,
-            'url'  => 'https://original.com/feed',
+            'url' => 'https://original.com/feed',
         ]);
 
         $feed->update(['url' => 'https://updated.com/feed']);
@@ -77,7 +77,7 @@ class FeedModelTest extends TestCase
         // would be the full link URL ('https://blog.example.com/welcome').
         $feed = Feed::factory()->create([
             'link' => 'https://blog.example.com/welcome',
-            'url'  => 'https://feeds.example.com/rss',
+            'url' => 'https://feeds.example.com/rss',
         ]);
 
         $this->assertEquals($feed->tld, $feed->website);

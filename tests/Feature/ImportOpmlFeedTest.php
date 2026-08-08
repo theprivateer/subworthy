@@ -37,7 +37,7 @@ class ImportOpmlFeedTest extends TestCase
 
     private function bindMockResponses(array $responses): void
     {
-        $mock  = new MockHandler($responses);
+        $mock = new MockHandler($responses);
         $stack = HandlerStack::create($mock);
 
         $this->app->bind(GuzzleClientInterface::class, fn () => new Client(['handler' => $stack]));
@@ -45,7 +45,7 @@ class ImportOpmlFeedTest extends TestCase
 
     private function rssResponse(): Response
     {
-        $xml = <<<XML
+        $xml = <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0">
               <channel>
@@ -66,7 +66,7 @@ class ImportOpmlFeedTest extends TestCase
         $user = User::factory()->create();
         $this->bindMockResponses([$this->rssResponse(), $this->rssResponse()]);
 
-        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed());
+        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed);
 
         $this->assertDatabaseHas('feeds', [
             'url' => 'https://example.com/feed.xml',
@@ -88,7 +88,7 @@ class ImportOpmlFeedTest extends TestCase
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
         $this->bindMockResponses([$this->rssResponse()]);
 
-        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed());
+        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed);
 
         $this->assertDatabaseCount('feeds', 1);
         $this->assertDatabaseCount('subscriptions', 1);
@@ -101,7 +101,7 @@ class ImportOpmlFeedTest extends TestCase
         $user = User::factory()->create();
         $this->bindMockResponses([$this->rssResponse(), $this->rssResponse()]);
 
-        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed());
+        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed);
 
         Queue::assertNotPushed(CheckFeed::class);
         $this->assertDatabaseHas('feeds', [
@@ -121,7 +121,7 @@ class ImportOpmlFeedTest extends TestCase
         ]);
         $this->bindMockResponses([$this->rssResponse()]);
 
-        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed());
+        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed);
 
         Queue::assertNotPushed(CheckFeed::class);
     }
@@ -133,7 +133,7 @@ class ImportOpmlFeedTest extends TestCase
 
         $user = User::factory()->create();
 
-        (new ImportOpmlFeed($user->id, 'not-a-url'))->handle(new SubscribeToFeed());
+        (new ImportOpmlFeed($user->id, 'not-a-url'))->handle(new SubscribeToFeed);
 
         $this->assertDatabaseCount('feeds', 0);
         $this->assertDatabaseCount('subscriptions', 0);
@@ -149,7 +149,7 @@ class ImportOpmlFeedTest extends TestCase
         $user = User::factory()->create();
         $this->bindMockResponses([new Response(500)]);
 
-        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed());
+        (new ImportOpmlFeed($user->id, 'https://example.com/feed.xml'))->handle(new SubscribeToFeed);
 
         $this->assertDatabaseCount('feeds', 0);
         $this->assertDatabaseCount('subscriptions', 0);

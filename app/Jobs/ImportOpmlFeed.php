@@ -16,6 +16,7 @@ class ImportOpmlFeed implements ShouldQueue
     use Queueable;
 
     public int $tries = 3;
+
     public int $timeout = 120;
 
     public function __construct(
@@ -27,8 +28,7 @@ class ImportOpmlFeed implements ShouldQueue
     {
         $url = $subscribeToFeed->normalizeFeedUrl($this->url);
 
-        if( ! $this->isImportableFeedUrl($url))
-        {
+        if (! $this->isImportableFeedUrl($url)) {
             Log::warning('OPML feed import skipped malformed URL', [
                 'user_id' => $this->userId,
                 'url' => $this->url,
@@ -37,7 +37,7 @@ class ImportOpmlFeed implements ShouldQueue
             return;
         }
 
-        Reader::setHttpClient(new GuzzleClient());
+        Reader::setHttpClient(new GuzzleClient);
 
         try {
             // This job validates that the OPML entry is actually a feed before creating
@@ -58,8 +58,7 @@ class ImportOpmlFeed implements ShouldQueue
 
     private function isImportableFeedUrl(string $url): bool
     {
-        if( ! filter_var($url, FILTER_VALIDATE_URL))
-        {
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
             return false;
         }
 

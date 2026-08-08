@@ -10,8 +10,8 @@ class ReadLaterComposer
     public function compose(View $view)
     {
         $count = ReadLater::query()
-                        ->where('user_id', auth()->id())
-                        ->count();
+            ->where('user_id', auth()->id())
+            ->count();
 
         $view->with('readLaterCount', $count);
     }

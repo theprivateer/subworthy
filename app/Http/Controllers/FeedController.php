@@ -8,6 +8,7 @@ use App\Reader\GuzzleClient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rules\File;
 use Laminas\Feed\Reader\Reader;
 
@@ -16,54 +17,44 @@ class FeedController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function create(Request $request)
-    {
-
-    }
+    public function create(Request $request) {}
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request, SubscribeToFeed $subscribeToFeed): RedirectResponse|View
     {
         $data = $request->validate(['url' => 'required|string']);
 
-        Reader::setHttpClient(new GuzzleClient());
+        Reader::setHttpClient(new GuzzleClient);
 
-        try
-        {
+        try {
             $this->result = Reader::import($data['url']);
 
             // proceed to subscribing...
-        } catch (\Exception $e)
-        {
+        } catch (\Exception $e) {
             try {
                 $feedLinks = Reader::findFeedLinks($data['url']);
 
-                if(count($feedLinks) == 1)
-                {
+                if (count($feedLinks) == 1) {
                     $data['url'] = (string) $feedLinks[0]['href'];
-                } else
-                {
+                } else {
                     return view('feed.create', [
-                        'feedLinks' => $feedLinks
+                        'feedLinks' => $feedLinks,
                     ]);
                 }
 
                 // If there is only one link, use that
                 // Otherwise show a page with feed options
-            } catch (\Exception $e)
-            {
+            } catch (\Exception $e) {
                 $error = $e->getMessage();
 
-                if(strpos($error, '403 Forbidden'))
-                {
-                    $error = 'Subscribing to ' . $data['url'] . ' resulted in a \'403 Forbidden\' response';
+                if (strpos($error, '403 Forbidden')) {
+                    $error = 'Subscribing to '.$data['url'].' resulted in a \'403 Forbidden\' response';
                 } else {
                     $error = strip_tags($error);
                     $error = trim($error);
@@ -78,11 +69,9 @@ class FeedController extends Controller
 
         $subscription = $subscribeToFeed($request->user()->id, $data['url']);
 
-        if($subscription->wasRecentlyCreated === true)
-        {
+        if ($subscription->wasRecentlyCreated === true) {
             flash('Subscription created');
-        } else
-        {
+        } else {
             flash('A Subscription to this Feed already exists');
         }
 
@@ -113,7 +102,7 @@ class FeedController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {

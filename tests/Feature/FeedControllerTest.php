@@ -41,7 +41,7 @@ class FeedControllerTest extends TestCase
 
     private function bindMockResponses(array $responses): void
     {
-        $mock  = new MockHandler($responses);
+        $mock = new MockHandler($responses);
         $stack = HandlerStack::create($mock);
 
         $this->app->bind(GuzzleClientInterface::class, fn () => new Client(['handler' => $stack]));
@@ -49,7 +49,7 @@ class FeedControllerTest extends TestCase
 
     private function rssResponse(): Response
     {
-        $xml = <<<XML
+        $xml = <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0">
               <channel>
@@ -121,7 +121,7 @@ class FeedControllerTest extends TestCase
 
         $user = User::factory()->create();
         $feed = Feed::factory()->create([
-            'url'               => 'https://example.com/feed.rss',
+            'url' => 'https://example.com/feed.rss',
             'protocol_less_url' => 'example.com/feed.rss',
         ]);
         $this->bindMockResponses([$this->rssResponse()]);
@@ -138,7 +138,7 @@ class FeedControllerTest extends TestCase
 
         $user = User::factory()->create();
         Feed::factory()->create([
-            'url'               => 'https://example.com/feed.rss',
+            'url' => 'https://example.com/feed.rss',
             'protocol_less_url' => 'example.com/feed.rss',
         ]);
         $this->bindMockResponses([$this->rssResponse()]);
@@ -158,7 +158,7 @@ class FeedControllerTest extends TestCase
 
         $user = User::factory()->create();
         $feed = Feed::factory()->create([
-            'url'               => 'https://example.com/feed.rss',
+            'url' => 'https://example.com/feed.rss',
             'protocol_less_url' => 'example.com/feed.rss',
         ]);
         Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $feed->id]);
@@ -215,7 +215,7 @@ class FeedControllerTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->create();
-        $opml = <<<XML
+        $opml = <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <opml version="2.0">
               <body>
@@ -244,7 +244,7 @@ class FeedControllerTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->create();
-        $opml = <<<XML
+        $opml = <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <opml version="2.0">
               <body>
@@ -267,7 +267,7 @@ class FeedControllerTest extends TestCase
     {
         Queue::fake([ProcessOpmlImport::class]);
 
-        $opml = <<<XML
+        $opml = <<<'XML'
             <?xml version="1.0" encoding="UTF-8"?>
             <opml version="2.0"><body></body></opml>
             XML;

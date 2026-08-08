@@ -25,7 +25,7 @@ class NewIssueNotificationTest extends TestCase
         $issue = Issue::factory()->create([
             'user_id' => $user->id,
             'edition' => 5,
-            'posts'   => json_encode([$post->id]),
+            'posts' => json_encode([$post->id]),
         ]);
         $issue->loadIssue();
 

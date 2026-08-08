@@ -17,7 +17,7 @@ class SubscriptionFactory extends Factory
         return [
             'user_id' => User::factory(),
             'feed_id' => Feed::factory(),
-            'title'   => null,
+            'title' => null,
         ];
     }
 }

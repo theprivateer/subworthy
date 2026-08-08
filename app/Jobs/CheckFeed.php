@@ -2,18 +2,17 @@
 
 namespace App\Jobs;
 
-use App\Jobs\SummarisePost;
 use App\Models\ArchivedPost;
 use App\Models\Feed;
 use App\Models\Post;
 use App\Reader\GuzzleClient;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Laminas\Feed\Reader\Reader;
 
 class CheckFeed implements ShouldQueue
@@ -21,12 +20,14 @@ class CheckFeed implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 300;
 
     /**
-     * @var \App\Models\Feed
+     * @var Feed
      */
     private $feed;
+
     /**
      * @var bool
      */
@@ -35,6 +36,7 @@ class CheckFeed implements ShouldQueue
     private $result;
 
     private $purifier;
+
     /**
      * @var false
      */
@@ -43,8 +45,7 @@ class CheckFeed implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\Feed $feed
-     * @param bool $firstLoad
+     * @param  bool  $firstLoad
      */
     public function __construct(Feed $feed, $firstLoad = false, $refresh_posts = false)
     {
@@ -62,16 +63,16 @@ class CheckFeed implements ShouldQueue
     {
         $start = Carbon::now();
 
-        Reader::setHttpClient(new GuzzleClient());
+        Reader::setHttpClient(new GuzzleClient);
 
-        try
-        {
+        try {
             $this->result = Reader::import($this->feed->url);
 
-            if($this->firstLoad || is_null($this->feed->title)) $this->updateFeedDetails();
+            if ($this->firstLoad || is_null($this->feed->title)) {
+                $this->updateFeedDetails();
+            }
 
-            foreach($this->result as $post)
-            {
+            foreach ($this->result as $post) {
                 $this->processPost($post);
             }
 
@@ -79,8 +80,7 @@ class CheckFeed implements ShouldQueue
             // not a full datetime. The scheduler compares it against the current UTC time string.
             $this->feed->next_check_at = $start->addHour()->format('Hi');
 
-        } catch (\Exception $e)
-        {
+        } catch (\Exception $e) {
             // On failure, back off 15 minutes rather than a full hour to retry sooner.
             $this->feed->next_check_at = $start->addMinutes(15)->format('Hi');
         }
@@ -110,20 +110,18 @@ class CheckFeed implements ShouldQueue
         // Skip posts older than a month — matches the pruning window — so that a first-load
         // of a feed with years of history doesn't flood the queue or the database.
         // TODO: set the pruning duration in config
-        if(Carbon::parse($data->getDateCreated())->lte(now()->subMonth()))
-        {
+        if (Carbon::parse($data->getDateCreated())->lte(now()->subMonth())) {
             return;
         }
 
         $post = Post::query()
-                    ->where('source_id', $data->getId())
-                    ->where('feed_id', $this->feed->id)
-                    ->first();
+            ->where('source_id', $data->getId())
+            ->where('feed_id', $this->feed->id)
+            ->first();
 
         // $refresh_posts forces re-importing content for existing posts, used when a
         // formatter or fetcher changes and existing post bodies need to be regenerated.
-        if ( ! $post || $this->refresh_posts)
-        {
+        if (! $post || $this->refresh_posts) {
             $raw = $data->getContent();
 
             $preview = $data->getDescription();
@@ -131,44 +129,45 @@ class CheckFeed implements ShouldQueue
             // TODO: find any relative paths and add full domain
 
             $insert = [
-                'feed_id'       => $this->feed->id,
-                'source_id'     => $data->getId(),
-                'url'           => $data->getLink(),
-                'title'         => $data->getTitle(),
-                'preview'       => trim($preview),
-                'raw'           => trim($raw), // keep the raw HTML for re-parsing/purifying later
-                'published_at'  => Carbon::parse($data->getDateCreated()),
-                'modified_at'   => Carbon::parse($data->getDateModified()),
+                'feed_id' => $this->feed->id,
+                'source_id' => $data->getId(),
+                'url' => $data->getLink(),
+                'title' => $data->getTitle(),
+                'preview' => trim($preview),
+                'raw' => trim($raw), // keep the raw HTML for re-parsing/purifying later
+                'published_at' => Carbon::parse($data->getDateCreated()),
+                'modified_at' => Carbon::parse($data->getDateModified()),
             ];
 
-            if($this->isAudioRSS($data))
-            {
+            if ($this->isAudioRSS($data)) {
                 $insert['audio_url'] = optional($data->getEnclosure())->url;
             }
 
+            $isNewPost = ! $post;
 
-            if( ! $post)
-            {
+            if ($isNewPost) {
                 $post = Post::create($insert);
-            } else
-            {
+            } else {
                 $post->update($insert);
             }
 
             // If there is a custom fetcher for this feed, trigger that now.
             // FetchFullPost will dispatch SummarisePost once enriched content is available.
-            if($this->feed->fetcher)
-            {
+            if ($this->feed->fetcher) {
                 dispatch(new FetchFullPost($post, (new $this->feed->fetcher)));
-            } else {
-                SummarisePost::dispatch($post);
+            } elseif ($isNewPost || blank($post->summary) || blank($post->themes)) {
+                // A refresh re-imports the same RSS content for posts we already hold, so an
+                // existing summary is still valid — re-summarising the whole archive every time
+                // refresh_posts is switched on would repeat the entire AI spend for nothing.
+                // Posts a previous run left unsummarised are still picked up.
+                SummarisePost::dispatch($post->id);
             }
         }
     }
 
     public function failed(?\Throwable $exception): void
     {
-        \Illuminate\Support\Facades\Log::error('CheckFeed failed', [
+        Log::error('CheckFeed failed', [
             'feed_id' => $this->feed->id,
             'error' => $exception?->getMessage(),
         ]);
@@ -176,13 +175,11 @@ class CheckFeed implements ShouldQueue
 
     private function isAudioRSS($post)
     {
-        if ( ! $post->getEnclosure())
-        {
+        if (! $post->getEnclosure()) {
             return false;
         }
 
-        if(strpos($post->getEnclosure()->type, 'audio') !== false)
-        {
+        if (strpos($post->getEnclosure()->type, 'audio') !== false) {
             return true;
         }
 

@@ -54,7 +54,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::middleware(ProtectAgainstSpam::class)->group(function() {
+Route::middleware(ProtectAgainstSpam::class)->group(function () {
     Route::post('/register', [RegisteredUserController::class, 'store'])
         ->middleware('guest');
 
