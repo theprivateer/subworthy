@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Pint (report only)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      # Reported only: a style violation annotates the run but does not fail it.
+      - name: Check code style
+        id: pint
+        continue-on-error: true
+        run: ./vendor/bin/pint --test
+
+      - name: Summarise result
+        if: always()
+        run: |
+          if [ "${{ steps.pint.outcome }}" = "success" ]; then
+            echo "Pint found no style issues." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Pint reported style issues. Run \`./vendor/bin/pint\` to fix them." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  tests:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+
+    # Set here rather than in .env: Laravel's dotenv loader is immutable, so real
+    # environment variables win over the .env copied in below.
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, fileinfo, libxml, mbstring, openssl, pdo_sqlite, sqlite3, tokenizer, xml, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Blade layouts use @vite, so views cannot render without a build manifest.
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      # A handful of tests do not use RefreshDatabase and expect an already-migrated
+      # database, so migrate up front rather than relying on an in-memory connection.
+      - name: Create and migrate the database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force --no-interaction
+
+      - name: Run tests
+        run: php artisan test --compact

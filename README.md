@@ -1,110 +1,262 @@
 # Subworthy
 
-Subscribe to blogs, news sites and podcasts and get it all delivered to your inbox once a day in your own personalised newsletter.
+Subworthy is a Laravel RSS and podcast aggregator that turns a set of subscribed feeds into a single personalised newsletter email. Users subscribe to feed URLs (individually or by uploading an OPML export), set the time and days they want their digest, apply per-subscription filters to drop content they don't care about, and receive one daily issue. Each issue is also kept as a browsable archive on a public profile page.
 
-## Requirements
+## Features
 
-- PHP 8.2+
-- Node.js (for frontend assets)
-- A database supported by Laravel (SQLite, MySQL, PostgreSQL)
-- [Laravel Herd](https://herd.laravel.com/) (recommended for local development)
+- **Feed subscriptions** — subscribe by URL; if the URL isn't a feed, Laminas' feed-link discovery is used to find one, and multiple candidates are presented as a choice.
+- **OPML import** — upload an `.opml`/`.xml` export (up to 1 MB). Parsing, de-duplication, and per-feed validation happen on the queue, so nested folder structures import without blocking the request.
+- **Scheduled daily digests** — per-user delivery time, timezone, and days of the week. Users with a `paused` timestamp are skipped by the scheduler.
+- **Per-subscription filters** — `contains`, `does not contain`, `equals`, `does not equal`, `regex`, and `regex no match` against any post field. A single matching filter excludes the post.
+- **AI summaries and themes** — `SummarisePost` sends article content to the configured provider (via `laravel/ai`) and stores a short excerpt plus 1–3 broad topic categories on the post. Summaries are discarded for posts under a word threshold; themes are kept for every post.
+- **Custom fetchers and formatters** — feeds can name a class to scrape richer content than the RSS body provides, or to change how the stored HTML is rendered.
+- **Read Later** — save posts from an issue and revisit them at `/readlater`.
+- **Public archive** — `/@{username}` lists a user's issues; individual issues are publicly viewable; outbound links pass through a tracking redirect.
+- **Automatic housekeeping** — posts and issues are pruned after a month (pruned posts leave a tombstone so they aren't re-imported), and feeds with no subscribers are deleted.
+- **`posts:backfill-summaries` command** — dispatch summary/theme generation for existing posts, interactively or via flags.
+
+## Project structure
+
+```
+app/
+  Actions/          SubscribeToFeed — shared feed + subscription creation
+  Ai/Agents/        PostSummariser — laravel/ai agent with structured output
+  Console/Commands/ BackfillPostSummaries
+  Fetchers/         FetcherContract, AbstractFetcher, ProducthuntFetcher
+  Filters/          PostFilterService — evaluates Filter records against a Post
+  Formatters/       FormatterContract, DefaultFormatter (HTMLPurifier + URL fixes)
+  Http/Controllers/ Feed, Subscription, Filter, Issue, ReadLater, Link, Home, Auth, User
+  Jobs/             CheckFeed, FetchFullPost, SummarisePost, CreateDailyIssue,
+                    EmailDailyIssue, ProcessOpmlImport, ImportOpmlFeed,
+                    RemoveUnsubscribedFeeds, RemoveUnsubscribedArticlesFromIssues
+  Livewire/         Article — inline expansion and read-later toggling
+  Models/           User, Feed, Subscription, Filter, Post, Issue, ArchivedPost, ReadLater
+  Notifications/    NewIssue — the digest email
+  Reader/           GuzzleClient — HTTP client for laminas-feed
+  View/             Layout components and the ReadLater view composer
+  functions.php     flash() and timezone_list() helpers (autoloaded)
+bootstrap/app.php   Routing, middleware, and the every-minute scheduler
+config/feeds.php    Feed refresh and post-summary tuning
+config/ai.php       AI provider credentials and defaults
+resources/scss/     Bootstrap 5 theme compiled by Vite
+resources/views/    Blade templates, including mail/issue.blade.php
+routes/web.php      Application routes (auth routes in routes/auth.php)
+tests/Feature/      The bulk of the suite — jobs, controllers, models, filters
+```
 
 ## Getting started
 
+### Prerequisites
+
+- PHP 8.3 or newer (developed and tested on 8.4)
+- Composer
+- Node.js and npm
+- SQLite, MySQL, or PostgreSQL
+- [Laravel Herd](https://herd.laravel.com/) — recommended; it serves the site at `https://subworthy.test`
+
+### Installation
+
 ```shell
+git clone <repository-url> subworthy
+cd subworthy
 composer install
 npm install
 cp .env.example .env
 php artisan key:generate
+```
+
+Set your database connection in `.env`. For SQLite:
+
+```shell
+touch database/database.sqlite
+```
+
+```dotenv
+DB_CONNECTION=sqlite
+```
+
+Then run the migrations and build the frontend:
+
+```shell
 php artisan migrate
 npm run build
 ```
 
-## Development
+### Environment variables
 
-The site is served automatically by Laravel Herd at `https://subworthy.test`.
+| Variable | Required | Description |
+|---|---|---|
+| `APP_KEY` | Yes | Generated by `php artisan key:generate`. |
+| `APP_URL` | Yes | Base URL — used for links in the digest email. |
+| `DB_CONNECTION` | Yes | `sqlite`, `mysql`, or `pgsql`. |
+| `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | For MySQL/Postgres | Standard Laravel database credentials. |
+| `QUEUE_CONNECTION` | Recommended | Use `database` (or Redis/SQS) in any real setup — the content pipeline is queue-driven, and `sync` makes feed checks run inline. |
+| `MAIL_MAILER` | Yes | `log` is fine locally. `mailgun` is supported via `symfony/mailgun-mailer`. |
+| `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Yes | Sender identity for digests. |
+| `MAILGUN_DOMAIN`, `MAILGUN_SECRET`, `MAILGUN_ENDPOINT` | If using Mailgun | Mailgun credentials. |
+| `OPENAI_API_KEY` | Optional | Enables AI summaries and themes. Without it, `SummarisePost` returns early and posts fall back to their RSS preview. |
+| `POST_SUMMARY_MIN_WORDS` | Optional | Posts shorter than this keep their themes but have the summary discarded. Default `50`. |
+| `POST_SUMMARY_MAX_CHARACTERS` | Optional | Content is truncated to this length before being sent to the provider. Default `12000`. |
+| `REFRESH_POSTS` | Optional | When `true`, scheduled `CheckFeed` runs re-import already-seen posts. Default `false`. |
+| `HONEYPOT_ENABLED` | Optional | Spam protection on public forms. Default `true`; disabled during tests. |
 
-To process feeds and send issues, both the scheduler and queue worker must be running:
+`config/ai.php` defines providers for Anthropic, Gemini, Groq, Ollama, OpenRouter, xAI and others alongside OpenAI. OpenAI is the default (`ai.default`); switch it and set that provider's key to use a different one.
+
+### Running locally
+
+Herd serves the site automatically at `https://subworthy.test`. Feeds are only imported and issues only sent while the scheduler and a queue worker are running:
 
 ```shell
 php artisan schedule:work      # runs the scheduler every minute
 php artisan queue:work         # processes queued jobs
 ```
 
-To rebuild frontend assets:
+For frontend work:
 
 ```shell
-npm run dev       # dev server with HMR
+npm run dev       # Vite dev server with HMR
 npm run build     # production build
 ```
 
-## Testing
+## Usage
+
+### Adding feeds
+
+Sign up, verify your email, then add a feed URL from the home page. If the URL is a website rather than a feed, Subworthy looks for feed links on the page and either subscribes directly (one match) or asks you to choose. A `Feed` record is shared across all users who subscribe to the same URL; your `Subscription` holds your own title override and filters.
+
+To bulk-import, upload an OPML file on the account page. The upload is stored briefly, parsed on the queue, and each `xmlUrl` is validated as a real feed before a subscription is created.
+
+### Delivery schedule
+
+On the account page, pick a timezone, a delivery time in 15-minute slots, and the days of the week you want issues. `delivery_time_local` (`Hi`, e.g. `0800`) is converted to a UTC `delivery_time` whenever the user is saved; the scheduler compares that string to the current UTC minute and checks that today's ISO day number appears in `days_of_week`.
+
+### Filters
+
+Each subscription can carry any number of filters, made up of a post `field`, an `operator`, and a `pattern`. `PostFilterService` runs them when the issue is built — a post matching any filter is recorded in `posts_excluded` instead of `posts`.
+
+### Backfilling summaries
 
 ```shell
-php artisan test                        # full test suite
-php artisan test --compact              # compact output
-php artisan test --filter=ClassName     # single test class or method
+php artisan posts:backfill-summaries                        # interactive prompts
+php artisan posts:backfill-summaries --feed=all --limit=100 # non-interactive
+php artisan posts:backfill-summaries --feed=3 --force       # re-summarise a feed
 ```
+
+Without `--force`, only posts missing a summary or themes are dispatched. Posts with no stored content are skipped and reported. The command fails fast if the default provider has no API key.
+
+### Writing a fetcher
+
+A fetcher scrapes content the feed doesn't include. Implement `FetcherContract`, then set the fully-qualified class name on `Feed.fetcher`:
+
+```php
+namespace App\Fetchers;
+
+use App\Models\Post;
+
+class ExampleFetcher extends AbstractFetcher implements FetcherContract
+{
+    public function fetch(Post $post)
+    {
+        // Scrape $post->url and write the result to $post->fetched_raw
+    }
+}
+```
+
+`CheckFeed` dispatches `FetchFullPost` for feeds with a fetcher, and `FetchFullPost` dispatches `SummarisePost` afterwards so the summary is generated from the enriched content. See `ProducthuntFetcher`, which reads the page's `__NEXT_DATA__` JSON.
+
+### Writing a formatter
+
+A formatter turns stored HTML into what's rendered. Implement `FormatterContract` and set `Feed.formatter`; leaving it null uses `DefaultFormatter`, which purifies the HTML down to a small tag allowlist, adds `target="_blank"` to links, and rewrites root-relative image paths onto the feed's domain.
 
 ## How it works
 
 ### Content pipeline
 
-Feed checking and issue delivery are entirely queue-driven. A scheduler fires every minute:
+The scheduler runs every minute and dispatches work from stored timestamps:
 
-1. Feeds whose `next_check_at` time matches the current UTC minute are dispatched as `CheckFeed` jobs.
-2. **`CheckFeed`** — imports the RSS/Atom feed via `laminas/laminas-feed`. Creates or updates `Post` records. If the feed has a `fetcher` class configured, dispatches `FetchFullPost` for each new post. Advances `next_check_at` by one hour on success, or 15 minutes on failure.
-3. **`FetchFullPost`** — runs a custom `FetcherContract` implementation to scrape richer content (e.g. `ProducthuntFetcher` extracts data from the page's Next.js JSON). Stores result in `Post.fetched_raw`.
-4. Users whose `delivery_time` (UTC) matches the current minute, and whose `days_of_week` includes today, receive a `CreateDailyIssue` job.
-5. **`CreateDailyIssue`** — collects posts since `last_delivered_at`, runs them through `PostFilterService`, stores surviving post IDs as JSON in a new `Issue` record, then dispatches `EmailDailyIssue`.
-6. **`EmailDailyIssue`** — hydrates the issue's posts and sends the `NewIssue` mail notification.
+1. Feeds whose `next_check_at` (a 4-character `Hi` string) matches the current UTC minute are dispatched as `CheckFeed` jobs.
+2. **`CheckFeed`** imports the feed with `laminas/laminas-feed` over a custom Guzzle client, creating or updating `Post` records. Posts older than a month, and posts with a matching `ArchivedPost` tombstone, are skipped. It then advances `next_check_at` by an hour, or by 15 minutes if the import threw.
+3. **`FetchFullPost`** runs the feed's `FetcherContract` implementation and stores the result in `Post.fetched_raw`.
+4. **`SummarisePost`** sends the post's content to the `PostSummariser` agent and stores the returned `summary` and `themes`. It is dispatched by `FetchFullPost` when a fetcher exists, and directly by `CheckFeed` otherwise.
+5. Users whose `delivery_time` matches the current minute, whose `days_of_week` includes today, and who aren't paused, receive a `CreateDailyIssue` job.
+6. **`CreateDailyIssue`** collects posts created since `last_delivered_at` (or the last two days for a first issue), splits them with `PostFilterService`, and — if anything survived — creates an `Issue` holding the post IDs as JSON, then dispatches `EmailDailyIssue`. `last_delivered_at` advances either way.
+7. **`EmailDailyIssue`** hydrates the issue via `Issue::loadIssue()` and sends the `NewIssue` notification, rendered from `resources/views/mail/issue.blade.php`.
 
-Daily maintenance jobs prune `Post` and `Issue` records older than one month (pruned posts are archived to `ArchivedPost` as tombstones), and remove feeds that have no remaining subscribers.
-
-### Feed extensibility
-
-Two fields on `Feed` allow per-feed customisation:
-
-- `Feed.formatter` — fully-qualified class implementing `FormatterContract`. Defaults to `DefaultFormatter`, which sanitises HTML via HTMLPurifier, adds `target="_blank"` to links, and resolves relative image URLs.
-- `Feed.fetcher` — fully-qualified class implementing `FetcherContract`. Run as `FetchFullPost` after `CheckFeed`. See `ProducthuntFetcher` for an example.
-
-### Filtering
-
-`PostFilterService` evaluates per-subscription `Filter` records against each post. A filter has `field`, `operator`, and `pattern`. The operator (e.g. `contains`, `does_not_contain`, `regex`) maps to a method via `_camelCase` dynamic dispatch. A matching filter returns `true`, which excludes the post from the issue.
-
-### Delivery schedule
-
-`User.delivery_time_local` (e.g. `0800`) combined with `User.timezone` is converted to a UTC `delivery_time` on save and stored as a 4-character string. The scheduler matches that string against the current UTC `Hi`-format time each minute. `days_of_week` is a string of ISO day numbers (1–7).
+Daily jobs prune `Post` and `Issue` records older than a month and remove feeds with no remaining subscribers. Unsubscribing also dispatches `RemoveUnsubscribedArticlesFromIssues`, which strips that feed's posts from the user's existing issues.
 
 ### Data model
 
 | Model | Notes |
 |---|---|
-| `User` | Auth, delivery schedule, timezone |
-| `Feed` | Shared across users; holds RSS URL, optional formatter/fetcher class |
+| `User` | Auth, delivery schedule, timezone, optional `paused` timestamp |
+| `Feed` | Shared across users; URL, `tld`, optional `fetcher`/`formatter` class, `next_check_at` |
 | `Subscription` | Joins User + Feed; optional title override; has many Filters |
-| `Post` | Belongs to Feed; `raw` = original RSS HTML; `fetched_raw` = scraper output |
-| `Issue` | Belongs to User; `posts` JSON column = included post IDs; `posts_excluded` = filtered-out IDs |
-| `ArchivedPost` | Tombstone (feed_id + source_id) to prevent re-import after pruning |
-| `ReadLater` | Joins User + Post for the read-later queue |
+| `Post` | Belongs to Feed; `raw` = original RSS HTML, `fetched_raw` = scraper output, `summary` + `themes` = AI output |
+| `Issue` | Belongs to User; `posts` JSON = included post IDs, `posts_excluded` = filtered-out IDs |
+| `ArchivedPost` | Tombstone (feed_id + source_id) preventing re-import after pruning |
+| `ReadLater` | Joins User + Post |
 | `Filter` | Belongs to Subscription; field + operator + pattern |
 
-### Public access
+### Public routes
 
-- `/@{username}` — public profile showing a user's issue archive
+- `/@{username}` — public profile and issue archive
 - `/issue/{issue}` — publicly viewable issue
-- `/link/{user}/{post}` — link tracking redirect
+- `/link/{user}/{post}` — tracked redirect to the original article
 
-## Stack
+## Testing
 
-| Layer | Technology |
-|---|---|
-| Framework | Laravel 13 |
-| PHP | 8.2+ |
-| Frontend | Bootstrap 5, Alpine.js (via Livewire), Vite |
-| Reactive UI | Livewire 3 |
-| Feed parsing | laminas/laminas-feed |
-| HTML sanitisation | ezyang/htmlpurifier |
-| HTTP | Guzzle 7, Symfony BrowserKit/HttpClient |
-| Spam protection | spatie/laravel-honeypot |
-| Testing | PHPUnit 12 |
+The suite is PHPUnit, split into `tests/Unit` and `tests/Feature`, with almost all coverage in the feature suite. Tests run against the connection configured in `.env`; `phpunit.xml` forces array cache/session, the array mailer, the sync queue, and disables the honeypot.
+
+Most classes use `RefreshDatabase`, but a few (`PostFilterServiceTest`, `PublicRoutesTest`) do not and expect an already-migrated schema — so the suite needs a real, migrated database and will not run against `DB_DATABASE=:memory:`. Note that `RefreshDatabase` will wipe whatever database `.env` points at.
+
+```shell
+php artisan test                        # full suite
+php artisan test --compact              # compact output
+php artisan test --filter=CheckFeedTest # a single class or method
+./vendor/bin/phpunit                    # alternative runner
+```
+
+## Building
+
+```shell
+npm run build     # compiles resources/scss and resources/js into public/build
+```
+
+Frontend changes won't appear until either `npm run dev` or `npm run build` has run.
+
+## Code style
+
+PHP is formatted with Laravel Pint, and StyleCI is configured with the `laravel` preset (`no_unused_imports` disabled).
+
+```shell
+./vendor/bin/pint            # format everything
+./vendor/bin/pint --dirty    # only changed files
+./vendor/bin/pint --test     # check without writing
+```
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on pushes to `main` and on every pull request:
+
+- **Pint (report only)** — runs `./vendor/bin/pint --test` and writes the result to the job summary. Style violations never fail the build.
+- **PHPUnit** — installs dependencies, builds the frontend (the Blade layouts use `@vite`, so views can't render without a manifest), creates and migrates a SQLite database, then runs `php artisan test --compact`.
+
+There is no deployment pipeline; CI only lints and tests.
+
+## Deployment
+
+Deployment is manual. At minimum it needs:
+
+1. `composer install --no-dev --optimize-autoloader` and `npm ci && npm run build`
+2. `php artisan migrate --force`
+3. `php artisan config:cache route:cache view:cache` (or `php artisan optimize`)
+4. A persistent queue worker (`php artisan queue:work`) and a cron entry running `php artisan schedule:run` every minute — without both, no feeds are checked and no issues are sent
+5. `APP_DEBUG=false` and a real mail transport
+
+## Contributing
+
+There is no `CONTRIBUTING.md`. Match the existing conventions: run Pint before committing, and add or update tests alongside any behaviour change. CI reports style issues but only fails on test failures.
+
+## License
+
+Released under the [MIT License](LICENSE).

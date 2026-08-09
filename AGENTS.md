@@ -4,7 +4,7 @@ This file provides guidance to AI coding assistants when working with code in th
 
 ## What this app does
 
-Subworthy is a Laravel 13 RSS/podcast aggregator that collects content from subscribed feeds and delivers it as a personalised daily newsletter email. Users subscribe to feed URLs, configure delivery schedules and per-subscription filters, and receive a single daily digest.
+Subworthy is a Laravel 13 RSS/podcast aggregator that collects content from subscribed feeds and delivers it as a personalised daily newsletter email. Users subscribe to feed URLs (individually or via OPML upload), configure delivery schedules and per-subscription filters, and receive a single daily digest. Imported posts are summarised and categorised by an AI agent built on `laravel/ai`.
 
 ## Development environment
 
@@ -28,8 +28,11 @@ npm run build     # production build
 php artisan migrate            # run migrations
 php artisan test               # run full test suite
 php artisan test --filter=Foo  # run a single test class or method
-php artisan test --compact     # compact output
+./vendor/bin/phpunit           # alternative test runner
 php artisan tinker             # REPL
+./vendor/bin/pint --dirty      # format changed files (Laravel preset)
+
+php artisan posts:backfill-summaries   # dispatch SummarisePost for posts missing summary/themes
 ```
 
 ## Architecture
@@ -38,12 +41,31 @@ php artisan tinker             # REPL
 
 Feed checking and issue delivery are entirely queue-driven. The scheduler fires every minute and dispatches jobs based on stored timestamps:
 
-1. **`CheckFeed` job** — imports an RSS/Atom feed via `laminas/laminas-feed` using a custom Guzzle HTTP client. Creates or updates `Post` records. If the feed has a `fetcher` class set, dispatches `FetchFullPost` for each post. Updates `Feed.next_check_at` to the next hour on success, or +15 minutes on failure.
-2. **`FetchFullPost` job** — runs a custom `FetcherContract` implementation to scrape additional content (e.g. `ProducthuntFetcher` scrapes Next.js JSON from the page). Stores result in `Post.fetched_raw`.
-3. **`CreateDailyIssue` job** — collects posts since the user's `last_delivered_at`, runs them through `PostFilterService`, stores surviving post IDs as JSON in an `Issue` record, then dispatches `EmailDailyIssue`.
-4. **`EmailDailyIssue` job** — calls `Issue::loadIssue()` to hydrate `issue_posts`, then sends the `NewIssue` mail notification using the `mail.issue` Markdown template.
+1. **`CheckFeed` job** — imports an RSS/Atom feed via `laminas/laminas-feed` using a custom Guzzle HTTP client. Creates or updates `Post` records, skipping posts older than a month and any with an `ArchivedPost` tombstone. If the feed has a `fetcher` class set, dispatches `FetchFullPost`; otherwise dispatches `SummarisePost` directly. Updates `Feed.next_check_at` to the next hour on success, or +15 minutes on failure.
+2. **`FetchFullPost` job** — runs a custom `FetcherContract` implementation to scrape additional content (e.g. `ProducthuntFetcher` scrapes Next.js JSON from the page). Stores result in `Post.fetched_raw`, then dispatches `SummarisePost` so the summary is built from the enriched content.
+3. **`SummarisePost` job** — takes a post **id**, not a model, and returns early if the post is gone or the default AI provider has no key. Sends a truncated, tag-stripped copy of the content to the `PostSummariser` agent and writes `Post.summary` and `Post.themes`. Summaries below `feeds.summarise_min_words` are discarded; themes are always kept.
+4. **`CreateDailyIssue` job** — collects posts since the user's `last_delivered_at` (two days back for a first issue), runs them through `PostFilterService`, stores surviving post IDs as JSON in an `Issue` record, then dispatches `EmailDailyIssue`. `last_delivered_at` advances even when no issue is created.
+5. **`EmailDailyIssue` job** — calls `Issue::loadIssue()` to hydrate `issue_posts`, then sends the `NewIssue` mail notification using the `mail.issue` Markdown template.
 
-The scheduler (registered in `bootstrap/app.php` via `withSchedule`) also runs `model:prune` daily — both `Post` and `Issue` are pruned after one month. Pruned posts are archived to `ArchivedPost` (feed_id + source_id only) to prevent re-importing. `RemoveUnsubscribedFeeds` also runs daily to delete feeds with no remaining subscribers.
+The scheduler (registered in `bootstrap/app.php` via `withSchedule`) skips users with a `paused` timestamp. It also runs `model:prune` daily — both `Post` and `Issue` are pruned after one month. Pruned posts are archived to `ArchivedPost` (feed_id + source_id only) to prevent re-importing. `RemoveUnsubscribedFeeds` also runs daily to delete feeds with no remaining subscribers.
+
+Unsubscribing dispatches `RemoveUnsubscribedArticlesFromIssues`, which rewrites the user's existing `Issue.posts` arrays to drop that feed's posts.
+
+### OPML import
+
+`FeedController::import` validates an `.opml`/`.xml` upload (max 1 MB), stores it on the `local` disk, and dispatches `ProcessOpmlImport`. That job parses the file with `simplexml_load_string` under `LIBXML_NONET`, recurses nested `<outline>` nodes, de-dupes the `xmlUrl` values, and dispatches one `ImportOpmlFeed` per URL — always deleting the stored file in a `finally` block. `ImportOpmlFeed` verifies the URL is readable as a feed before calling `SubscribeToFeed`, which runs the first `CheckFeed` inline (`checkFeedImmediately: true`) so titles are populated straight away.
+
+`SubscribeToFeed` (`app/Actions/SubscribeToFeed.php`) is the single entry point for creating a `Feed` + `Subscription` pair — feeds are de-duplicated on `protocol_less_url`. Use it rather than creating those records directly.
+
+### AI summarisation
+
+`App\Ai\Agents\PostSummariser` is a `laravel/ai` agent with `HasStructuredOutput`, returning `summary` (string) and `themes` (array of strings). It carries `#[UseCheapestModel]`. Provider credentials live in `config/ai.php`; `ai.default` is `openai`. Tuning knobs are in `config/feeds.php`:
+
+- `feeds.refresh_posts` (`REFRESH_POSTS`) — re-import already-seen posts on scheduled checks
+- `feeds.summarise_min_words` (`POST_SUMMARY_MIN_WORDS`) — below this, the summary is dropped but themes are kept
+- `feeds.summarise_max_characters` (`POST_SUMMARY_MAX_CHARACTERS`) — content truncation before the provider call
+
+Both `SummarisePost` and `BackfillPostSummaries` guard on `config("ai.providers.".config('ai.default').".key")`, so the app works with no key configured — posts simply fall back to their RSS preview.
 
 ### Feed extensibility
 
@@ -61,22 +83,47 @@ Two fields on `Feed` allow per-feed customisation:
 
 ### Data model summary
 
-- `User` → many `Subscription`, `Issue`, `ReadLater`
-- `Feed` → many `Subscription` (shared across users)
+- `User` → many `Subscription`, `Issue`, `ReadLater`; `paused` is a nullable timestamp the scheduler checks (no UI sets it)
+- `Feed` → many `Subscription` (shared across users); `tld` is used by `DefaultFormatter` to resolve root-relative image paths
 - `Subscription` → belongs to `User` + `Feed`; has many `Filter`; `title` overrides `Feed.title` when set
-- `Post` → belongs to `Feed`; `raw` holds original RSS HTML; `fetched_raw` holds scraper output
+- `Post` → belongs to `Feed`; `raw` holds original RSS HTML; `fetched_raw` holds scraper output; `summary` and `themes` (JSON, cast to array) hold AI output
 - `Issue` → belongs to `User`; `posts` JSON column holds included post IDs; `posts_excluded` holds filtered-out IDs
 - `ArchivedPost` — tombstone record (feed_id + source_id) to block re-import of pruned posts
 
+`Post::getBodyAttribute()` and `getPreviewAttribute()` render through the feed's formatter on access — they are not stored columns.
+
 ### Frontend
 
-Bootstrap 5 + Alpine.js (bundled via Livewire). SCSS compiled via Vite from `resources/scss/style.scss`. Livewire 3 is used for the `Article` component (`app/Livewire/Article.php`) which handles inline article expansion and read-later toggling without page reloads.
+Bootstrap 5 + Alpine.js (bundled via Livewire). SCSS compiled via Vite from `resources/scss/style.scss`. Livewire 4 is installed, but the one component — `Article` (`app/Livewire/Article.php` plus `resources/views/livewire/article.blade.php`) — is still a class-based v3-style component rather than a single-file component. It handles inline article expansion and read-later toggling without page reloads.
 
 ### Public profile
 
 Users have a public profile at `/@{username}` showing their issue archive. Issues are also publicly accessible at `/issue/{issue}`. Link tracking goes through `/link/{user}/{post}`.
 
----
+### Testing conventions
+
+Tests are PHPUnit, almost all under `tests/Feature`. They extend `Tests\TestCase` and add the `RefreshDatabase` trait per class. `phpunit.xml` forces array cache/session, the array mailer, the sync queue, and `HONEYPOT_ENABLED=false` — but it does **not** override `DB_CONNECTION` (the sqlite in-memory lines are commented out), so tests run against whatever database `.env` points at, and `RefreshDatabase` will wipe it. Use the model factories in `database/factories` rather than building rows by hand.
+
+`PostFilterServiceTest` and `PublicRoutesTest` omit `RefreshDatabase` and hit the database anyway, so the suite needs an already-migrated schema and cannot run against `DB_DATABASE=:memory:`. That is why CI migrates a file-based SQLite database before running tests.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests: a `lint` job running `pint --test` with `continue-on-error` (report only — style never fails the build), and a `tests` job that builds the frontend (`@vite` in the layouts means views cannot render without a manifest), migrates a SQLite database, and runs `php artisan test --compact`.
+
+### Known gotchas
+
+- `Feed::boot()` derives `tld` in a `saving` hook from `link ?? url`; never set it manually.
+- `Feed::getWebsiteAttribute()` has a self-comparison bug (marked in the source) that makes it always return `tld`.
+- `Feed.next_check_at` and `User.delivery_time` are 4-character `Hi` strings, not datetimes — the scheduler compares them as strings against `Carbon::now()->format('Hi')`.
+- `PostFilterService::filter()` returns `true` when a post should be **excluded**.
+- Jobs that run after content is written (`SummarisePost`) take an id rather than a model, so they read the current row instead of a stale serialised copy. Follow that pattern for anything queued behind a write.
+
+## Framework rules
+
+Detailed rules for Laravel and Livewire live in `.claude/rules/` and auto-load when working on matching files — no `@` imports needed here:
+
+- `.claude/rules/laravel.md` — loads for all `**/*.php` files
+- `.claude/rules/livewire.md` — loads for `app/Livewire/**` and `resources/views/livewire/**`
 
 <laravel-boost-guidelines>
 === foundation rules ===
