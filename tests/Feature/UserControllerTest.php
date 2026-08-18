@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class UserControllerTest extends TestCase
@@ -130,5 +132,68 @@ class UserControllerTest extends TestCase
         $this->actingAs($user)
             ->get('/user/cancel')
             ->assertRedirect('/confirm-password');
+    }
+
+    // -------------------------------------------------------------------------
+    // email verification on change
+    // -------------------------------------------------------------------------
+
+    public function test_changing_email_clears_verification_and_sends_a_new_link(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($user)->post('/user', ['email' => 'new@example.com']);
+
+        $user->refresh();
+
+        $this->assertSame('new@example.com', $user->email);
+        $this->assertNull($user->email_verified_at);
+
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_a_user_with_a_changed_email_is_no_longer_treated_as_verified(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'old@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($user)->post('/user', ['email' => 'new@example.com']);
+
+        // The authenticated area is gated on 'verified', so the new address must be
+        // confirmed before the account works again.
+        $this->actingAs($user->fresh())
+            ->get('/home')
+            ->assertRedirect(route('verification.notice'));
+    }
+
+    public function test_saving_the_same_email_keeps_verification_intact(): void
+    {
+        Notification::fake();
+
+        $verifiedAt = now()->subDay();
+
+        $user = User::factory()->create([
+            'email' => 'same@example.com',
+            'email_verified_at' => $verifiedAt,
+        ]);
+
+        $this->actingAs($user)->post('/user', [
+            'email' => 'same@example.com',
+            'username' => 'newhandle',
+        ]);
+
+        $user->refresh();
+
+        $this->assertSame('newhandle', $user->username);
+        $this->assertNotNull($user->email_verified_at);
+
+        Notification::assertNothingSent();
     }
 }

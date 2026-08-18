@@ -57,16 +57,34 @@ class UserController extends Controller
 
     public function update(Request $request)
     {
-        $this->validate($request, [
+        $validated = $this->validate($request, [
             'email' => ['required', 'email', 'unique:users,email,'.auth()->id()],
             'username' => ['nullable', 'string', 'unique:users,username,'.auth()->id()],
         ]);
 
         $user = auth()->user();
 
-        $user->update($request->only([
-            'email', 'username',
-        ]));
+        $emailIsChanging = $validated['email'] !== $user->email;
+
+        $user->fill($validated);
+
+        // The whole authenticated area sits behind the 'verified' middleware, so leaving
+        // email_verified_at in place would let someone move their account to an address they
+        // do not control and stay verified — and have issues delivered there. Clearing it
+        // means the new address has to be confirmed before delivery resumes.
+        if ($emailIsChanging) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        if ($emailIsChanging) {
+            $user->sendEmailVerificationNotification();
+
+            flash('Account updated. Check your new address for a verification link.');
+
+            return back();
+        }
 
         flash('Account updated');
 

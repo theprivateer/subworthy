@@ -83,8 +83,21 @@ class Post extends Model
      */
     public function getSafeAudioUrlAttribute(): ?string
     {
-        $url = $this->getAttribute('audio_url');
+        return $this->httpUrlOrNull($this->getAttribute('audio_url'));
+    }
 
+    /**
+     * url is the feed item's link, so it is likewise publisher-controlled. LinkController
+     * redirects to it from a public route, which would otherwise let a feed publisher turn
+     * this application's domain into a redirect to anywhere they like.
+     */
+    public function getSafeUrlAttribute(): ?string
+    {
+        return $this->httpUrlOrNull($this->getAttribute('url'));
+    }
+
+    private function httpUrlOrNull(?string $url): ?string
+    {
         if (blank($url)) {
             return null;
         }
