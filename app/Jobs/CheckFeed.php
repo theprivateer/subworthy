@@ -73,19 +73,60 @@ class CheckFeed implements ShouldQueue
             }
 
             foreach ($this->result as $post) {
-                $this->processPost($post);
+                $this->processPostSafely($post);
             }
 
             // next_check_at stores a 4-digit 24-hour time string (Hi format, e.g. "0930"),
             // not a full datetime. The scheduler compares it against the current UTC time string.
             $this->feed->next_check_at = $start->addHour()->format('Hi');
 
-        } catch (\Exception $e) {
-            // On failure, back off 15 minutes rather than a full hour to retry sooner.
+            $this->feed->save();
+        } catch (\Throwable $e) {
+            // On failure, back off 15 minutes rather than a full hour to retry sooner. This is
+            // written before rethrowing because an uncaught exception would otherwise leave
+            // next_check_at on its old slot, stalling the feed for a full day.
             $this->feed->next_check_at = $start->addMinutes(15)->format('Hi');
-        }
+            $this->feed->save();
 
-        $this->feed->save();
+            Log::warning('CheckFeed attempt failed', [
+                'feed_id' => $this->feed->id,
+                'url' => $this->feed->url,
+                'attempt' => $this->attempts(),
+                'error' => $e->getMessage(),
+            ]);
+
+            // Rethrowing is what gives $tries and failed() any meaning. Swallowing the
+            // exception here made the job report success on every error, so it never retried,
+            // never recorded a failure, and a feed broken for weeks looked healthy.
+            throw $e;
+        }
+    }
+
+    /**
+     * Retries are only useful here if they are spaced out — a feed that just refused a
+     * connection is unlikely to answer differently a millisecond later.
+     *
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [60, 300];
+    }
+
+    /**
+     * A single malformed item must not cost the rest of the feed. Before this, one bad post
+     * threw out of the loop into the outer handler and abandoned every remaining item.
+     */
+    private function processPostSafely($data): void
+    {
+        try {
+            $this->processPost($data);
+        } catch (\Throwable $e) {
+            Log::warning('CheckFeed skipped an unreadable post', [
+                'feed_id' => $this->feed->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function updateFeedDetails()
@@ -169,6 +210,8 @@ class CheckFeed implements ShouldQueue
     {
         Log::error('CheckFeed failed', [
             'feed_id' => $this->feed->id,
+            'url' => $this->feed->url,
+            'attempts' => $this->attempts(),
             'error' => $exception?->getMessage(),
         ]);
     }

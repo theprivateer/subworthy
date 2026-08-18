@@ -13,10 +13,12 @@ use App\Models\Post;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface as GuzzleClientInterface;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Laminas\Feed\Reader\Reader;
 use Tests\TestCase;
@@ -96,6 +98,47 @@ class CheckFeedTest extends TestCase
               <pubDate>{$pubDate}</pubDate>
               {$enclosure}
             </item>
+            XML;
+    }
+
+    /**
+     * The middle item omits <link>, so Post.url — a non-nullable column — comes back null and
+     * the insert throws. A feed dropping a link on one item is an ordinary real-world defect,
+     * and it must not cost the two good items either side of it.
+     */
+    private function feedXmlWithAnUnparsableItem(): string
+    {
+        $pubDate = now()->subDay()->toRfc2822String();
+
+        return <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+              <channel>
+                <title>Test Feed</title>
+                <link>https://example.com</link>
+                <description>A test feed</description>
+                <item>
+                  <guid isPermaLink="false">good-1</guid>
+                  <title>Good One</title>
+                  <link>https://example.com/good-1</link>
+                  <description>Preview</description>
+                  <pubDate>{$pubDate}</pubDate>
+                </item>
+                <item>
+                  <guid isPermaLink="false">broken</guid>
+                  <title>Broken</title>
+                  <description>Preview</description>
+                  <pubDate>{$pubDate}</pubDate>
+                </item>
+                <item>
+                  <guid isPermaLink="false">good-2</guid>
+                  <title>Good Two</title>
+                  <link>https://example.com/good-2</link>
+                  <description>Preview</description>
+                  <pubDate>{$pubDate}</pubDate>
+                </item>
+              </channel>
+            </rss>
             XML;
     }
 
@@ -243,10 +286,104 @@ class CheckFeedTest extends TestCase
         $feed = Feed::factory()->create();
         $this->bind500Response();
 
-        CheckFeed::dispatchSync($feed);
+        // The backoff is written before the exception propagates, so it survives the failure.
+        try {
+            CheckFeed::dispatchSync($feed);
+            $this->fail('CheckFeed should rethrow so the queue can retry and record a failure.');
+        } catch (ServerException) {
+            // expected
+        }
 
         $feed->refresh();
         $this->assertEquals('0845', $feed->next_check_at);
+
+        Carbon::setTestNow();
+    }
+
+    // -------------------------------------------------------------------------
+    // failure reporting
+    // -------------------------------------------------------------------------
+
+    /**
+     * The job previously swallowed every exception and returned normally, which made $tries
+     * and failed() unreachable — a feed broken for weeks was indistinguishable from a healthy
+     * one.
+     */
+    public function test_a_failed_fetch_propagates_so_the_queue_can_retry(): void
+    {
+        $feed = Feed::factory()->create();
+        $this->bind500Response();
+
+        $this->expectException(ServerException::class);
+
+        CheckFeed::dispatchSync($feed);
+    }
+
+    public function test_a_failed_fetch_is_logged_and_reaches_the_failed_handler(): void
+    {
+        Log::spy();
+
+        $feed = Feed::factory()->create();
+        $this->bind500Response();
+
+        try {
+            CheckFeed::dispatchSync($feed);
+        } catch (ServerException) {
+            // asserted below
+        }
+
+        // Each attempt records what went wrong...
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(fn (string $message, array $context) => $message === 'CheckFeed attempt failed'
+                && $context['feed_id'] === $feed->id
+                && $context['error'] !== '');
+
+        // ...and failed(), which the swallowed exception previously made unreachable, now runs.
+        Log::shouldHaveReceived('error')
+            ->once()
+            ->withArgs(fn (string $message, array $context) => $message === 'CheckFeed failed'
+                && $context['feed_id'] === $feed->id);
+    }
+
+    public function test_the_job_declares_retries_and_a_spaced_backoff(): void
+    {
+        $job = new CheckFeed(Feed::factory()->create());
+
+        $this->assertSame(3, $job->tries);
+        $this->assertSame([60, 300], $job->backoff());
+    }
+
+    // -------------------------------------------------------------------------
+    // per-post isolation
+    // -------------------------------------------------------------------------
+
+    /**
+     * One malformed item used to throw out of the import loop into the outer handler,
+     * abandoning every remaining post in the feed.
+     */
+    public function test_one_unreadable_post_does_not_abandon_the_rest_of_the_feed(): void
+    {
+        $feed = Feed::factory()->create();
+        $this->bindMockResponse($this->feedXmlWithAnUnparsableItem());
+
+        CheckFeed::dispatchSync($feed);
+
+        $this->assertDatabaseHas('posts', ['source_id' => 'good-1']);
+        $this->assertDatabaseHas('posts', ['source_id' => 'good-2']);
+    }
+
+    public function test_next_check_at_still_advances_when_a_single_post_is_unreadable(): void
+    {
+        Carbon::setTestNow('2024-01-15 08:30:00');
+
+        $feed = Feed::factory()->create();
+        $this->bindMockResponse($this->feedXmlWithAnUnparsableItem());
+
+        CheckFeed::dispatchSync($feed);
+
+        $feed->refresh();
+        $this->assertEquals('0930', $feed->next_check_at);
 
         Carbon::setTestNow();
     }
