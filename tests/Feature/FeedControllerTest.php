@@ -310,4 +310,43 @@ class FeedControllerTest extends TestCase
         $errors = session('errors');
         $this->assertStringContainsString('403 Forbidden', $errors->first());
     }
+
+    // -------------------------------------------------------------------------
+    // outbound URL guard (SSRF)
+    // -------------------------------------------------------------------------
+
+    public function test_store_refuses_to_subscribe_to_an_internal_address(): void
+    {
+        config(['feeds.block_private_urls' => true]);
+        Queue::fake();
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/feed/create', [
+            'url' => 'http://169.254.169.254/latest/meta-data/',
+        ]);
+
+        $response->assertSessionHasErrors();
+
+        $this->assertDatabaseCount('feeds', 0);
+        $this->assertDatabaseCount('subscriptions', 0);
+        Queue::assertNotPushed(CheckFeed::class);
+    }
+
+    public function test_store_refuses_a_non_http_scheme(): void
+    {
+        config(['feeds.block_private_urls' => true]);
+        Queue::fake();
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/feed/create', [
+            'url' => 'file:///etc/passwd',
+        ]);
+
+        $response->assertSessionHasErrors();
+
+        $this->assertDatabaseCount('feeds', 0);
+        Queue::assertNotPushed(CheckFeed::class);
+    }
 }

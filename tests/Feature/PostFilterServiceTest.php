@@ -7,10 +7,13 @@ use App\Models\Feed;
 use App\Models\Filter;
 use App\Models\Post;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PostFilterServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private function filter(Post $post, array $filters): bool
     {
         return PostFilterService::filter($post, new Collection($filters));

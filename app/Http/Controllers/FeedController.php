@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\SubscribeToFeed;
 use App\Jobs\ProcessOpmlImport;
 use App\Reader\GuzzleClient;
+use App\Reader\OutboundUrlGuard;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,10 +31,18 @@ class FeedController extends Controller
     {
         $data = $request->validate(['url' => 'required|string']);
 
+        // The client enforces this too, on every redirect hop. Checking here as well turns
+        // what would otherwise surface as a fetch failure into a clear validation message.
+        if (! OutboundUrlGuard::isFetchable($data['url'])) {
+            return back()->withErrors(
+                'That URL could not be subscribed to. Enter a public http:// or https:// feed address.'
+            );
+        }
+
         Reader::setHttpClient(new GuzzleClient);
 
         try {
-            $this->result = Reader::import($data['url']);
+            Reader::import($data['url']);
 
             // proceed to subscribing...
         } catch (\Exception $e) {
@@ -41,7 +50,17 @@ class FeedController extends Controller
                 $feedLinks = Reader::findFeedLinks($data['url']);
 
                 if (count($feedLinks) == 1) {
-                    $data['url'] = (string) $feedLinks[0]['href'];
+                    // This href comes from the markup of the page the user pointed us at, so
+                    // it is third-party input in its own right and gets the same check.
+                    $discovered = (string) $feedLinks[0]['href'];
+
+                    if (! OutboundUrlGuard::isFetchable($discovered)) {
+                        return back()->withErrors(
+                            'The feed advertised by that page could not be subscribed to.'
+                        );
+                    }
+
+                    $data['url'] = $discovered;
                 } else {
                     return view('feed.create', [
                         'feedLinks' => $feedLinks,
@@ -53,7 +72,7 @@ class FeedController extends Controller
             } catch (\Exception $e) {
                 $error = $e->getMessage();
 
-                if (strpos($error, '403 Forbidden')) {
+                if (str_contains($error, '403 Forbidden')) {
                     $error = 'Subscribing to '.$data['url'].' resulted in a \'403 Forbidden\' response';
                 } else {
                     $error = strip_tags($error);

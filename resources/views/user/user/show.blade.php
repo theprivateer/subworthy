@@ -39,7 +39,7 @@
                                 <div class="flex-grow-1 position-relative">
                                     <a href="{{ $subscription->feed->website }}" class="stretched-link">{{ $subscription->title ?? $subscription->feed->title }}</a>
                                     @if($subscription->feed->description)
-                                        <span class="text-muted d-block small">{!! $subscription->feed->description !!}</span>
+                                        <span class="text-muted d-block small">{{ $subscription->feed->description }}</span>
                                     @endif
                                 </div>
 

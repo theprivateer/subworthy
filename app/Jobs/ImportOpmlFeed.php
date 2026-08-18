@@ -4,11 +4,11 @@ namespace App\Jobs;
 
 use App\Actions\SubscribeToFeed;
 use App\Reader\GuzzleClient;
+use App\Reader\OutboundUrlGuard;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Laminas\Feed\Reader\Reader;
-use League\Uri\Uri;
 use Throwable;
 
 class ImportOpmlFeed implements ShouldQueue
@@ -56,14 +56,17 @@ class ImportOpmlFeed implements ShouldQueue
         $subscribeToFeed($this->userId, $url, checkFeedImmediately: true);
     }
 
+    /**
+     * OPML files come from third parties, so entries are checked against the same guard the
+     * HTTP client enforces. Doing it here as well keeps a rejected entry to a single log line
+     * instead of a thrown request, and skips the feed without failing the whole import.
+     */
     private function isImportableFeedUrl(string $url): bool
     {
         if (! filter_var($url, FILTER_VALIDATE_URL)) {
             return false;
         }
 
-        $scheme = Uri::createFromString($url)->getScheme();
-
-        return in_array($scheme, ['http', 'https'], true);
+        return OutboundUrlGuard::isFetchable($url);
     }
 }

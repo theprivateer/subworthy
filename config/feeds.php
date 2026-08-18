@@ -46,4 +46,36 @@ return [
 
     'summarise_max_characters' => env('POST_SUMMARY_MAX_CHARACTERS', 12000),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Outbound HTTP Timeouts
+    |--------------------------------------------------------------------------
+    |
+    | Applied to every feed fetch made through App\Reader\GuzzleClient. Guzzle
+    | itself defaults both of these to 0, meaning no limit at all, which lets a
+    | slow or hostile endpoint hold a request open indefinitely — including in
+    | the web request that FeedController::store() serves. Values are seconds.
+    |
+    */
+
+    'http_timeout' => env('FEED_HTTP_TIMEOUT', 10),
+
+    'http_connect_timeout' => env('FEED_HTTP_CONNECT_TIMEOUT', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Block Private Outbound URLs
+    |--------------------------------------------------------------------------
+    |
+    | Feed URLs come from users and from third-party OPML files, and are fetched
+    | server-side. With this on, App\Reader\OutboundUrlGuard rejects any URL that
+    | is not a publicly routable http(s) address — loopback, private ranges and
+    | cloud metadata endpoints — on the initial request and on every redirect.
+    | Set FEED_BLOCK_PRIVATE_URLS=false only in tests, where DNS resolution of
+    | generated hostnames would be slow and non-deterministic. Defaults to true.
+    |
+    */
+
+    'block_private_urls' => env('FEED_BLOCK_PRIVATE_URLS', true),
+
 ];

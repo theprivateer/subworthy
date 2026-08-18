@@ -75,6 +75,25 @@ class Post extends Model
         return $this->getFormatter()->render($preview);
     }
 
+    /**
+     * audio_url is taken from a feed enclosure, so the feed publisher controls it, and it is
+     * interpolated into iframe src and anchor href attributes. Anything that is not a plain
+     * http(s) URL is dropped rather than rendered, so a javascript: or data: enclosure cannot
+     * become script. Applied on read so rows stored before this check are covered too.
+     */
+    public function getSafeAudioUrlAttribute(): ?string
+    {
+        $url = $this->getAttribute('audio_url');
+
+        if (blank($url)) {
+            return null;
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true) ? $url : null;
+    }
+
     private function getFormatter(): FormatterContract
     {
         if (is_null($this->feed->formatter)) {

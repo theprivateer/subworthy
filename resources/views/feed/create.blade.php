@@ -68,7 +68,7 @@
                                 @foreach($feedLinks as $index => $link)
                                     <div class="mb-3">
                                         <input type="radio" class="btn-check" id="url_{{ $index }}" name="url" value="{{ $link['href'] }}" autocomplete="off">
-                                        <label class="btn btn-outline-primary d-block" for="url_{{ $index }}">{!! $link['title'] ? $link['title'] . ' &mdash;' : ''  !!} {{ $link['href'] }}</label>
+                                        <label class="btn btn-outline-primary d-block" for="url_{{ $index }}">@if($link['title']){{ $link['title'] }} &mdash;@endif {{ $link['href'] }}</label>
                                     </div>
                                 @endforeach
                             @endif

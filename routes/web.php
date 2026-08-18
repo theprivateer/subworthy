@@ -33,8 +33,10 @@ Route::get('@{username}', [UserController::class, 'show']);
 Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-    Route::post('feed/create', [FeedController::class, 'store'])->name('feed.create');
-    Route::post('feed/import', [FeedController::class, 'import'])->name('feed.import');
+    // Both endpoints trigger outbound fetches, so they are rate limited to bound how
+    // fast one account can drive server-side requests.
+    Route::post('feed/create', [FeedController::class, 'store'])->name('feed.create')->middleware('throttle:20,1');
+    Route::post('feed/import', [FeedController::class, 'import'])->name('feed.import')->middleware('throttle:5,1');
 
     Route::get('subscription/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('subscription.edit');
     Route::post('subscription/{subscription}/edit', [SubscriptionController::class, 'update']);

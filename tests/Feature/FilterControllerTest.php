@@ -128,4 +128,57 @@ class FilterControllerTest extends TestCase
 
         $this->assertDatabaseMissing('filters', ['id' => $filter->id]);
     }
+
+    // -------------------------------------------------------------------------
+    // authorization
+    // -------------------------------------------------------------------------
+
+    public function test_store_rejects_filter_on_another_users_subscription(): void
+    {
+        $victim = User::factory()->create();
+        $attacker = User::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $victim->id]);
+
+        $this->actingAs($attacker)->post("/filter/{$subscription->id}/create", [
+            'field' => 'title',
+            'operator' => 'contains',
+            'pattern' => 'keyword',
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('filters', 0);
+    }
+
+    public function test_update_rejects_filter_belonging_to_another_user(): void
+    {
+        $victim = User::factory()->create();
+        $attacker = User::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $victim->id]);
+        $filter = Filter::factory()->create([
+            'subscription_id' => $subscription->id,
+            'pattern' => 'original',
+        ]);
+
+        $this->actingAs($attacker)->post("/filter/{$filter->id}/edit", [
+            'field_'.$filter->id => 'title',
+            'operator_'.$filter->id => 'contains',
+            'pattern_'.$filter->id => 'hijacked',
+        ])->assertNotFound();
+
+        $this->assertDatabaseHas('filters', [
+            'id' => $filter->id,
+            'pattern' => 'original',
+        ]);
+    }
+
+    public function test_destroy_rejects_filter_belonging_to_another_user(): void
+    {
+        $victim = User::factory()->create();
+        $attacker = User::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $victim->id]);
+        $filter = Filter::factory()->create(['subscription_id' => $subscription->id]);
+
+        $this->actingAs($attacker)->delete("/filter/{$filter->id}")->assertNotFound();
+
+        $this->assertDatabaseHas('filters', ['id' => $filter->id]);
+    }
 }
