@@ -85,4 +85,20 @@ class NewIssueNotificationTest extends TestCase
 
         $this->assertTrue($mail->viewData['posts']->has($feed->id));
     }
+
+    public function test_mail_uses_post_content_as_the_link_text_when_the_title_is_missing(): void
+    {
+        [$user, $issue, $post] = $this->makeIssue();
+
+        $post->update([
+            'title' => null,
+            'fetched_raw' => null,
+            'raw' => '<p>A titleless short-form post that can still be opened.</p>',
+        ]);
+        $issue->loadIssue();
+
+        $html = (new NewIssue($issue))->toMail($user)->render()->toHtml();
+
+        $this->assertStringContainsString('A titleless short-form post that can still be open...', $html);
+    }
 }

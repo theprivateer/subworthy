@@ -75,6 +75,24 @@ class Post extends Model
         return $this->getFormatter()->render($preview);
     }
 
+    public function getDisplayTitleAttribute(): string
+    {
+        $title = $this->getAttribute('title');
+
+        if (filled($title)) {
+            return $title;
+        }
+
+        $content = $this->getAttribute('fetched_raw')
+            ?? $this->getAttribute('raw')
+            ?? $this->getAttribute('preview')
+            ?? '';
+
+        $content = Str::squish(html_entity_decode(strip_tags($content), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        return filled($content) ? Str::limit($content, 50) : 'Untitled post';
+    }
+
     /**
      * audio_url is taken from a feed enclosure, so the feed publisher controls it, and it is
      * interpolated into iframe src and anchor href attributes. Anything that is not a plain

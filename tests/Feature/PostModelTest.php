@@ -81,6 +81,43 @@ class PostModelTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // getDisplayTitleAttribute()
+    // -------------------------------------------------------------------------
+
+    public function test_display_title_returns_the_post_title_when_present(): void
+    {
+        $post = Post::factory()->make(['title' => 'The supplied title']);
+
+        $this->assertSame('The supplied title', $post->display_title);
+    }
+
+    public function test_display_title_falls_back_to_the_first_50_characters_of_content(): void
+    {
+        $post = Post::factory()->make([
+            'title' => null,
+            'fetched_raw' => null,
+            'raw' => '<p>123456789012345678901234567890</p> <p>123456789012345678901234567890</p>',
+        ]);
+
+        $this->assertSame(
+            '123456789012345678901234567890 1234567890123456789...',
+            $post->display_title,
+        );
+    }
+
+    public function test_display_title_is_never_blank(): void
+    {
+        $post = Post::factory()->make([
+            'title' => ' ',
+            'preview' => null,
+            'raw' => null,
+            'fetched_raw' => null,
+        ]);
+
+        $this->assertSame('Untitled post', $post->display_title);
+    }
+
+    // -------------------------------------------------------------------------
     // Pruning
     // -------------------------------------------------------------------------
 

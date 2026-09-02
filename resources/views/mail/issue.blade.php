@@ -16,7 +16,7 @@ View Issue Online
 ## {{ $feed->first()->feed_title ?? $feed->first()->feed->title }}
 
 @foreach($feed as $post)
-* [{{ $post->title }}]({{ route('link', [$user, $post]) }})
+* [{{ $post->display_title }}]({{ route('link', [$user, $post]) }})
 @endforeach
 @endforeach
 
