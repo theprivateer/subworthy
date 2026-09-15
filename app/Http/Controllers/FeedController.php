@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ExportSubscriptions;
 use App\Actions\SubscribeToFeed;
 use App\Jobs\ProcessOpmlImport;
 use App\Reader\GuzzleClient;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rules\File;
 use Laminas\Feed\Reader\Reader;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FeedController extends Controller
 {
@@ -115,6 +117,11 @@ class FeedController extends Controller
         flash('OPML import queued. Your subscriptions will appear as the import runs.');
 
         return redirect()->route('home');
+    }
+
+    public function export(Request $request, ExportSubscriptions $exportSubscriptions): StreamedResponse
+    {
+        return $exportSubscriptions($request->user()->id);
     }
 
     /**

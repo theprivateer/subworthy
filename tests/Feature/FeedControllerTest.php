@@ -279,6 +279,81 @@ class FeedControllerTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // OPML export
+    // -------------------------------------------------------------------------
+
+    public function test_opml_export_downloads_all_of_the_users_subscriptions(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $firstFeed = Feed::factory()->create([
+            'title' => 'First & Feed',
+            'url' => 'https://example.com/first.xml?format=rss&lang=en',
+            'link' => 'https://example.com/first',
+        ]);
+        $secondFeed = Feed::factory()->create([
+            'title' => 'Second Feed',
+            'url' => 'https://example.com/second.xml',
+            'link' => null,
+        ]);
+        $otherFeed = Feed::factory()->create([
+            'title' => 'Private Feed',
+            'url' => 'https://example.com/private.xml',
+        ]);
+
+        Subscription::factory()->create([
+            'user_id' => $user->id,
+            'feed_id' => $firstFeed->id,
+        ]);
+        Subscription::factory()->create([
+            'user_id' => $user->id,
+            'feed_id' => $secondFeed->id,
+            'title' => 'My <Second> Feed',
+        ]);
+        Subscription::factory()->create([
+            'user_id' => $otherUser->id,
+            'feed_id' => $otherFeed->id,
+        ]);
+
+        $response = $this->actingAs($user)->get('/feed/export');
+
+        $response
+            ->assertOk()
+            ->assertDownload('subworthy-subscriptions.opml')
+            ->assertHeader('content-type', 'application/xml; charset=UTF-8');
+
+        $content = $response->streamedContent();
+        $opml = simplexml_load_string($content);
+
+        $this->assertNotFalse($opml);
+        $this->assertSame('2.0', (string) $opml['version']);
+        $this->assertSame('Subworthy subscriptions', (string) $opml->head->title);
+        $this->assertCount(2, $opml->body->outline);
+        $this->assertSame('First & Feed', (string) $opml->body->outline[0]['text']);
+        $this->assertSame('https://example.com/first.xml?format=rss&lang=en', (string) $opml->body->outline[0]['xmlUrl']);
+        $this->assertSame('https://example.com/first', (string) $opml->body->outline[0]['htmlUrl']);
+        $this->assertSame('My <Second> Feed', (string) $opml->body->outline[1]['title']);
+        $this->assertSame('', (string) $opml->body->outline[1]['htmlUrl']);
+        $this->assertStringNotContainsString('Private Feed', $content);
+    }
+
+    public function test_opml_export_is_valid_when_the_user_has_no_subscriptions(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/feed/export');
+        $opml = simplexml_load_string($response->streamedContent());
+
+        $this->assertNotFalse($opml);
+        $this->assertCount(0, $opml->body->outline);
+    }
+
+    public function test_unauthenticated_users_cannot_export_opml(): void
+    {
+        $this->get('/feed/export')->assertRedirect('/login');
+    }
+
+    // -------------------------------------------------------------------------
     // Error handling
     // -------------------------------------------------------------------------
 

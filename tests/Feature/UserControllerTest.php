@@ -43,6 +43,8 @@ class UserControllerTest extends TestCase
             ->assertOk()
             ->assertViewIs('user.user.edit')
             ->assertSee('Upload OPML')
+            ->assertSeeInOrder(['Export Subscriptions', 'Cancel your Account'])
+            ->assertSee(route('feed.export'), escape: false)
             ->assertViewHas('user', fn ($u) => $u->id === $user->id)
             ->assertViewHas('timezone')
             ->assertViewHas('times');

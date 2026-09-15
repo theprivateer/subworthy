@@ -37,6 +37,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     // fast one account can drive server-side requests.
     Route::post('feed/create', [FeedController::class, 'store'])->name('feed.create')->middleware('throttle:20,1');
     Route::post('feed/import', [FeedController::class, 'import'])->name('feed.import')->middleware('throttle:5,1');
+    Route::get('feed/export', [FeedController::class, 'export'])->name('feed.export');
 
     Route::get('subscription/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('subscription.edit');
     Route::post('subscription/{subscription}/edit', [SubscriptionController::class, 'update']);

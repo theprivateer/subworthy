@@ -150,6 +150,22 @@
             <div class="mt-4 pt-4">
                 <div class="card">
                     <div class="card-header">
+                        Export Subscriptions
+                    </div>
+
+                    <div class="card-body">
+                        Download all of your current subscriptions as an OPML file for use in another feed reader.
+                    </div>
+
+                    <div class="card-footer">
+                        <a href="{{ route('feed.export') }}" class="btn btn-outline-primary">Download OPML</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4">
+                <div class="card">
+                    <div class="card-header">
                         Cancel your Account
                     </div>
 
