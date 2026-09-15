@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use League\Uri\Uri;
 
 class Feed extends Model
@@ -39,6 +40,15 @@ class Feed extends Model
     public function subscribers(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function isVideoFeed(): bool
+    {
+        $uri = Uri::createFromString($this->url);
+        $host = Str::lower($uri->getHost());
+
+        return ($host === 'youtube.com' || Str::endsWith($host, '.youtube.com'))
+            && $uri->getPath() === '/feeds/videos.xml';
     }
 
     public function getWebsiteAttribute()

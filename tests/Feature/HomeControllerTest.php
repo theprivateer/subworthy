@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Feed;
 use App\Models\Issue;
 use App\Models\Subscription;
 use App\Models\User;
@@ -28,6 +29,31 @@ class HomeControllerTest extends TestCase
             ->get('/home')
             ->assertViewIs('home')
             ->assertViewHas('subscriptions', fn ($s) => $s->contains($subscription));
+    }
+
+    public function test_video_icon_is_only_shown_for_video_feeds(): void
+    {
+        $user = User::factory()->create();
+        $videoFeed = Feed::factory()->create([
+            'title' => 'Video Channel',
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+        $regularFeed = Feed::factory()->create([
+            'title' => 'Written Feed',
+            'url' => 'https://example.com/feed.xml',
+        ]);
+
+        Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $videoFeed->id]);
+        Subscription::factory()->create(['user_id' => $user->id, 'feed_id' => $regularFeed->id]);
+
+        $response = $this->actingAs($user)->get('/home');
+
+        $response
+            ->assertOk()
+            ->assertSee('Video Channel')
+            ->assertSee('Written Feed');
+
+        $this->assertSame(1, substr_count($response->getContent(), '>Video feed</span>'));
     }
 
     public function test_home_page_passes_last_7_issues_to_view(): void

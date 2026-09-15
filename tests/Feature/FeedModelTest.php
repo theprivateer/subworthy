@@ -59,6 +59,45 @@ class FeedModelTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Video feed detection
+    // -------------------------------------------------------------------------
+
+    public function test_youtube_channel_feed_is_a_video_feed(): void
+    {
+        $feed = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+
+        $this->assertTrue($feed->isVideoFeed());
+    }
+
+    public function test_youtube_subdomain_video_feed_is_a_video_feed(): void
+    {
+        $feed = Feed::factory()->create([
+            'url' => 'https://m.youtube.com/feeds/videos.xml?playlist_id=PL123',
+        ]);
+
+        $this->assertTrue($feed->isVideoFeed());
+    }
+
+    public function test_non_youtube_and_non_video_urls_are_not_video_feeds(): void
+    {
+        $regularFeed = Feed::factory()->create([
+            'url' => 'https://example.com/feed.xml',
+        ]);
+        $youtubePage = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/channel/UC123',
+        ]);
+        $lookalikeFeed = Feed::factory()->create([
+            'url' => 'https://notyoutube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+
+        $this->assertFalse($regularFeed->isVideoFeed());
+        $this->assertFalse($youtubePage->isVideoFeed());
+        $this->assertFalse($lookalikeFeed->isVideoFeed());
+    }
+
+    // -------------------------------------------------------------------------
     // getWebsiteAttribute() — known bug documented
     // -------------------------------------------------------------------------
 

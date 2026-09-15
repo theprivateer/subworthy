@@ -48,7 +48,15 @@
                         @foreach($subscriptions as $subscription)
                             <div class="list-group-item d-flex">
                                 <div class="flex-grow-1 position-relative">
-                                    <a href="{{ route('subscription.edit', $subscription) }}" class="stretched-link">{{ $subscription->title ?? $subscription->feed->title ?? $subscription->feed->protocol_less_url }}</a>
+                                    <a href="{{ route('subscription.edit', $subscription) }}" class="stretched-link">
+                                        {{ $subscription->title ?? $subscription->feed->title ?? $subscription->feed->protocol_less_url }}
+                                        @if($subscription->feed->isVideoFeed())
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-camera-video-fill ms-1" viewBox="0 0 16 16" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M0 5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v.5l3.2-2.4a.5.5 0 0 1 .8.4v9a.5.5 0 0 1-.8.4L11 10.5v.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V5z"/>
+                                            </svg>
+                                            <span class="visually-hidden">Video feed</span>
+                                        @endif
+                                    </a>
                                     @if($subscription->feed->description)
                                         <span class="text-muted d-block small">{{ $subscription->feed->description }}</span>
                                     @endif
