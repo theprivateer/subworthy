@@ -11,11 +11,23 @@ class Subscription extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'exclude_shorts' => false,
+    ];
+
     protected $fillable = [
         'user_id',
         'feed_id',
         'title',
+        'exclude_shorts',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'exclude_shorts' => 'boolean',
+        ];
+    }
 
     public function user(): BelongsTo
     {

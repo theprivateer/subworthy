@@ -118,6 +118,36 @@ class PostModelTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // YouTube URL detection
+    // -------------------------------------------------------------------------
+
+    public function test_youtube_shorts_are_detected_from_their_url(): void
+    {
+        $this->assertTrue(Post::factory()->make([
+            'url' => 'https://www.youtube.com/shorts/video-id',
+        ])->isYoutubeShort());
+
+        $this->assertTrue(Post::factory()->make([
+            'url' => 'https://m.youtube.com/shorts/video-id/',
+        ])->isYoutubeShort());
+    }
+
+    public function test_non_short_urls_are_not_detected_as_youtube_shorts(): void
+    {
+        $this->assertFalse(Post::factory()->make([
+            'url' => 'https://www.youtube.com/watch?v=video-id',
+        ])->isYoutubeShort());
+
+        $this->assertFalse(Post::factory()->make([
+            'url' => 'https://www.youtube.com/shorts',
+        ])->isYoutubeShort());
+
+        $this->assertFalse(Post::factory()->make([
+            'url' => 'https://notyoutube.com/shorts/video-id',
+        ])->isYoutubeShort());
+    }
+
+    // -------------------------------------------------------------------------
     // Pruning
     // -------------------------------------------------------------------------
 

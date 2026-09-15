@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\RemoveUnsubscribedArticlesFromIssues;
+use App\Models\Feed;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,6 +40,34 @@ class SubscriptionControllerTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_edit_shows_exclude_shorts_for_youtube_subscriptions(): void
+    {
+        $user = User::factory()->create();
+        $feed = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'feed_id' => $feed->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get("/subscription/{$subscription->id}/edit")
+            ->assertOk()
+            ->assertSee('Exclude Shorts');
+    }
+
+    public function test_edit_hides_exclude_shorts_for_other_subscriptions(): void
+    {
+        $user = User::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->get("/subscription/{$subscription->id}/edit")
+            ->assertOk()
+            ->assertDontSee('Exclude Shorts');
+    }
+
     // -------------------------------------------------------------------------
     // update
     // -------------------------------------------------------------------------
@@ -73,6 +102,45 @@ class SubscriptionControllerTest extends TestCase
         $this->actingAs($user)
             ->post("/subscription/{$subscription->id}/edit", ['title' => str_repeat('a', 256)])
             ->assertSessionHasErrors('title');
+    }
+
+    public function test_update_can_enable_and_disable_excluding_youtube_shorts(): void
+    {
+        $user = User::factory()->create();
+        $feed = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'feed_id' => $feed->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post("/subscription/{$subscription->id}/edit", [
+                'title' => null,
+                'exclude_shorts' => '1',
+            ]);
+
+        $this->assertTrue($subscription->fresh()->exclude_shorts);
+
+        $this->actingAs($user)
+            ->post("/subscription/{$subscription->id}/edit", ['title' => null]);
+
+        $this->assertFalse($subscription->fresh()->exclude_shorts);
+    }
+
+    public function test_update_cannot_enable_excluding_shorts_for_a_non_youtube_subscription(): void
+    {
+        $user = User::factory()->create();
+        $subscription = Subscription::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->post("/subscription/{$subscription->id}/edit", [
+                'title' => null,
+                'exclude_shorts' => '1',
+            ]);
+
+        $this->assertFalse($subscription->fresh()->exclude_shorts);
     }
 
     public function test_update_with_another_users_subscription_returns_404(): void

@@ -98,7 +98,7 @@ class FeedModelTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // getWebsiteAttribute() — known bug documented
+    // getWebsiteAttribute()
     // -------------------------------------------------------------------------
 
     public function test_website_returns_tld_when_link_is_empty(): void
@@ -108,17 +108,23 @@ class FeedModelTest extends TestCase
         $this->assertEquals($feed->tld, $feed->website);
     }
 
-    public function test_website_always_returns_tld_even_when_link_is_set(): void
+    public function test_regular_feed_website_returns_tld_even_when_link_is_set(): void
     {
-        // BUG: getWebsiteAttribute() contains a self-comparison (link == link) that is
-        // always true, so tld is always returned and the link URL is never reached.
-        // This test documents the current broken behaviour. The correct return value
-        // would be the full link URL ('https://blog.example.com/welcome').
         $feed = Feed::factory()->create([
             'link' => 'https://blog.example.com/welcome',
             'url' => 'https://feeds.example.com/rss',
         ]);
 
         $this->assertEquals($feed->tld, $feed->website);
+    }
+
+    public function test_youtube_feed_website_returns_the_channel_link_from_rss_metadata(): void
+    {
+        $feed = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+            'link' => 'https://www.youtube.com/channel/UC123',
+        ]);
+
+        $this->assertSame('https://www.youtube.com/channel/UC123', $feed->website);
     }
 }

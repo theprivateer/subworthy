@@ -16,6 +16,14 @@
                         <div class="form-text">Add a custom title to this feed</div>
                     </div>
 
+                    @if($subscription->feed->isVideoFeed())
+                        <div class="form-check form-switch mb-3">
+                            <input type="checkbox" class="form-check-input" role="switch" id="exclude_shorts" name="exclude_shorts" value="1" @checked(old('exclude_shorts', $subscription->exclude_shorts))>
+                            <label for="exclude_shorts" class="form-check-label">Exclude Shorts</label>
+                            <div class="form-text">Exclude YouTube Shorts from future daily issues. Existing issues will not change.</div>
+                        </div>
+                    @endif
+
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                 </form>
             </div>

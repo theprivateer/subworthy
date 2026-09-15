@@ -24,6 +24,8 @@ class PostFactory extends Factory
             'audio_url' => null,
             'published_at' => fake()->dateTimeBetween('-2 weeks', 'now'),
             'modified_at' => null,
+            'processed_at' => null,
+            'processed_filename' => null,
         ];
     }
 }

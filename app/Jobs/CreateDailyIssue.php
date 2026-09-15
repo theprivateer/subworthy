@@ -58,7 +58,8 @@ class CreateDailyIssue implements ShouldQueue
             // $posts_filtered = posts that survived all filters (included in the issue).
             // $posts_excluded = posts that matched a filter rule (omitted from the issue).
             foreach ($posts as $post) {
-                if (PostFilterService::filter($post, $subscription->filters)) {
+                if (($subscription->exclude_shorts && $post->isYoutubeShort())
+                    || PostFilterService::filter($post, $subscription->filters)) {
                     $posts_excluded[] = $post->id;
                 } else {
                     $posts_filtered[] = $post->id;

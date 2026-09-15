@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use League\Uri\Uri;
 
 class Post extends Model
 {
@@ -28,13 +29,36 @@ class Post extends Model
         'audio_url',
         'published_at',
         'modified_at',
+        'processed_at',
+        'processed_filename',
     ];
 
     protected function casts(): array
     {
         return [
             'themes' => 'array',
+            'processed_at' => 'datetime',
         ];
+    }
+
+    public function isYoutubeVideo(): bool
+    {
+        $uri = Uri::createFromString($this->url);
+        $host = Str::lower($uri->getHost());
+        parse_str($uri->getQuery(), $query);
+
+        return ($host === 'youtube.com' || Str::endsWith($host, '.youtube.com'))
+            && $uri->getPath() === '/watch'
+            && filled($query['v'] ?? null);
+    }
+
+    public function isYoutubeShort(): bool
+    {
+        $uri = Uri::createFromString($this->url);
+        $host = Str::lower($uri->getHost());
+
+        return ($host === 'youtube.com' || Str::endsWith($host, '.youtube.com'))
+            && preg_match('#^/shorts/[^/]+/?$#', $uri->getPath()) === 1;
     }
 
     public function feed(): BelongsTo

@@ -165,6 +165,64 @@ class CreateDailyIssueTest extends TestCase
         Queue::assertNotPushed(EmailDailyIssue::class);
     }
 
+    public function test_youtube_shorts_are_excluded_when_the_subscription_setting_is_enabled(): void
+    {
+        Queue::fake([EmailDailyIssue::class]);
+
+        $user = User::factory()->create(['last_delivered_at' => now()->subDay()]);
+        $feed = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+        Subscription::factory()->create([
+            'user_id' => $user->id,
+            'feed_id' => $feed->id,
+            'exclude_shorts' => true,
+        ]);
+        $short = Post::factory()->create([
+            'feed_id' => $feed->id,
+            'url' => 'https://www.youtube.com/shorts/short-video',
+            'created_at' => now()->subHour(),
+        ]);
+        $video = Post::factory()->create([
+            'feed_id' => $feed->id,
+            'url' => 'https://www.youtube.com/watch?v=full-video',
+            'created_at' => now()->subHour(),
+        ]);
+
+        CreateDailyIssue::dispatchSync($user);
+
+        $issue = Issue::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertContains($video->id, json_decode($issue->posts));
+        $this->assertContains($short->id, json_decode($issue->posts_excluded));
+    }
+
+    public function test_youtube_shorts_are_included_when_the_subscription_setting_is_disabled(): void
+    {
+        Queue::fake([EmailDailyIssue::class]);
+
+        $user = User::factory()->create(['last_delivered_at' => now()->subDay()]);
+        $feed = Feed::factory()->create([
+            'url' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UC123',
+        ]);
+        Subscription::factory()->create([
+            'user_id' => $user->id,
+            'feed_id' => $feed->id,
+            'exclude_shorts' => false,
+        ]);
+        $short = Post::factory()->create([
+            'feed_id' => $feed->id,
+            'url' => 'https://www.youtube.com/shorts/short-video',
+            'created_at' => now()->subHour(),
+        ]);
+
+        CreateDailyIssue::dispatchSync($user);
+
+        $issue = Issue::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertContains($short->id, json_decode($issue->posts));
+    }
+
     // -------------------------------------------------------------------------
     // last_delivered_at
     // -------------------------------------------------------------------------

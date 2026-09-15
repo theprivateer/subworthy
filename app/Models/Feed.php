@@ -51,18 +51,12 @@ class Feed extends Model
             && $uri->getPath() === '/feeds/videos.xml';
     }
 
-    public function getWebsiteAttribute()
+    public function getWebsiteAttribute(): string
     {
-        if (empty($this->getAttribute('link'))) {
-            return $this->getAttribute('tld');
+        if ($this->isVideoFeed() && filled($this->getAttribute('link'))) {
+            return $this->getAttribute('link');
         }
 
-        // BUG: this compares link to itself so it is always true, meaning tld is always
-        // returned and the link attribute is never used as the website URL.
-        if (strtolower($this->getAttribute('link')) == strtolower($this->getAttribute('link'))) {
-            return $this->getAttribute('tld');
-        }
-
-        return $this->getAttribute('link');
+        return $this->getAttribute('tld');
     }
 }

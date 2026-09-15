@@ -18,6 +18,7 @@ class SubscriptionFactory extends Factory
             'user_id' => User::factory(),
             'feed_id' => Feed::factory(),
             'title' => null,
+            'exclude_shorts' => false,
         ];
     }
 }

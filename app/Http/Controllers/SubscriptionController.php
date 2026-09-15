@@ -25,9 +25,19 @@ class SubscriptionController extends Controller
 
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
+            'exclude_shorts' => ['sometimes', 'boolean'],
         ]);
 
-        $subscription->update($validated);
+        $updates = [
+            'exclude_shorts' => $subscription->feed->isVideoFeed()
+                && $request->boolean('exclude_shorts'),
+        ];
+
+        if (array_key_exists('title', $validated)) {
+            $updates['title'] = $validated['title'];
+        }
+
+        $subscription->update($updates);
 
         return back();
     }
