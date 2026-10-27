@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Track Article Links
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, article links pass through Subworthy so reader interactions
+    | can be recorded. Disable this to link directly to each article's source.
+    |
+    */
+
+    'track_article_links' => env('TRACK_ARTICLE_LINKS', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Post Summary Minimum Word Count
     |--------------------------------------------------------------------------
     |

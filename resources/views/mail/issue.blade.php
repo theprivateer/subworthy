@@ -16,7 +16,12 @@ View Issue Online
 ## {{ $feed->first()->feed_title ?? $feed->first()->feed->title }}
 
 @foreach($feed as $post)
-* [{{ $post->display_title }}]({{ route('link', [$user, $post]) }})
+@php($articleUrl = $post->articleUrlFor($user))
+@if($articleUrl)
+* [{{ $post->display_title }}]({{ $articleUrl }})
+@else
+* {{ $post->display_title }}
+@endif
 @endforeach
 @endforeach
 

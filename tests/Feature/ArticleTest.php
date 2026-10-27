@@ -91,6 +91,30 @@ class ArticleTest extends TestCase
             ->assertSet('fullArticle', false);
     }
 
+    public function test_full_article_uses_the_tracked_article_url_when_tracking_is_enabled(): void
+    {
+        [$owner, $post] = $this->makeSetup();
+
+        config(['feeds.track_article_links' => true]);
+
+        Livewire::test(Article::class, ['post' => $post, 'user' => $owner, 'authUser' => false])
+            ->set('fullArticle', true)
+            ->assertSeeHtml('href="'.route('link', [$owner, $post]).'"');
+    }
+
+    public function test_full_article_uses_the_source_url_when_tracking_is_disabled(): void
+    {
+        [$owner, $post] = $this->makeSetup();
+        $post->update(['url' => 'https://publisher.example/articles/direct-link']);
+
+        config(['feeds.track_article_links' => false]);
+
+        Livewire::test(Article::class, ['post' => $post->fresh(), 'user' => $owner, 'authUser' => false])
+            ->set('fullArticle', true)
+            ->assertSeeHtml('href="https://publisher.example/articles/direct-link"')
+            ->assertDontSeeHtml('href="'.route('link', [$owner, $post]).'"');
+    }
+
     // -------------------------------------------------------------------------
     // readLater()
     // -------------------------------------------------------------------------

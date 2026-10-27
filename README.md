@@ -95,6 +95,7 @@ npm run build
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Yes | Sender identity for digests. |
 | `MAILGUN_DOMAIN`, `MAILGUN_SECRET`, `MAILGUN_ENDPOINT` | If using Mailgun | Mailgun credentials. |
 | `OPENAI_API_KEY` | Optional | Enables AI summaries and themes. Without it, `SummarisePost` returns early and posts fall back to their RSS preview. |
+| `TRACK_ARTICLE_LINKS` | Optional | Routes article links through Subworthy to record interactions. Set to `false` to link directly to the source. Default `true`. |
 | `POST_SUMMARY_MIN_WORDS` | Optional | Posts shorter than this keep their themes but have the summary discarded. Default `50`. |
 | `POST_SUMMARY_MAX_CHARACTERS` | Optional | Content is truncated to this length before being sent to the provider. Default `12000`. |
 | `REFRESH_POSTS` | Optional | When `true`, scheduled `CheckFeed` runs re-import already-seen posts. Default `false`. |

@@ -138,6 +138,15 @@ class Post extends Model
         return $this->httpUrlOrNull($this->getAttribute('url'));
     }
 
+    public function articleUrlFor(User $user): ?string
+    {
+        if (config('feeds.track_article_links')) {
+            return route('link', [$user, $this]);
+        }
+
+        return $this->safe_url;
+    }
+
     private function httpUrlOrNull(?string $url): ?string
     {
         if (blank($url)) {

@@ -101,4 +101,29 @@ class NewIssueNotificationTest extends TestCase
 
         $this->assertStringContainsString('A titleless short-form post that can still be open...', $html);
     }
+
+    public function test_mail_uses_the_tracked_article_url_when_tracking_is_enabled(): void
+    {
+        [$user, $issue, $post] = $this->makeIssue();
+
+        config(['feeds.track_article_links' => true]);
+
+        $html = (new NewIssue($issue))->toMail($user)->render()->toHtml();
+
+        $this->assertStringContainsString('href="'.route('link', [$user, $post]).'"', $html);
+    }
+
+    public function test_mail_uses_the_source_url_when_tracking_is_disabled(): void
+    {
+        [$user, $issue, $post] = $this->makeIssue();
+        $post->update(['url' => 'https://publisher.example/articles/direct-link']);
+        $issue->loadIssue();
+
+        config(['feeds.track_article_links' => false]);
+
+        $html = (new NewIssue($issue))->toMail($user)->render()->toHtml();
+
+        $this->assertStringContainsString('href="https://publisher.example/articles/direct-link"', $html);
+        $this->assertStringNotContainsString('href="'.route('link', [$user, $post]).'"', $html);
+    }
 }
